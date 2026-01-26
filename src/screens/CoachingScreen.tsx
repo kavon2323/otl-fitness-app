@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 import { useCoachStore } from '../store/coachStore';
 import {
@@ -27,19 +27,74 @@ export const CoachingScreen: React.FC = () => {
 
   const [currentScreen, setCurrentScreen] = useState<CoachScreen>('dashboard');
   const [editingDayIndex, setEditingDayIndex] = useState<number>(0);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadTimeout, setLoadTimeout] = useState(false);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
+    let timeoutId: NodeJS.Timeout;
+
+    const loadProfile = async () => {
+      if (user?.id) {
+        setLoadError(null);
+        setLoadTimeout(false);
+
+        // Set a timeout to prevent infinite loading
+        timeoutId = setTimeout(() => {
+          if (mountedRef.current && isLoading) {
+            setLoadTimeout(true);
+          }
+        }, 8000);
+
+        try {
+          await loadUserProfile(user.id);
+        } catch (error) {
+          if (mountedRef.current) {
+            console.error('Error loading profile:', error);
+            setLoadError('Failed to load profile');
+          }
+        }
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      mountedRef.current = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [user?.id]);
+
+  const handleRetry = () => {
+    setLoadError(null);
+    setLoadTimeout(false);
     if (user?.id) {
       loadUserProfile(user.id);
     }
-  }, [user?.id]);
+  };
 
-  // Loading state
-  if (isLoading) {
+  // Loading state with timeout handling
+  if (isLoading && !loadTimeout) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  // Error or timeout state
+  if (loadError || loadTimeout) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.errorIcon}>⚠️</Text>
+        <Text style={styles.errorText}>
+          {loadError || 'Loading took too long'}
+        </Text>
+        <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -187,6 +242,27 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 12,
     fontSize: 14,
+  },
+  errorIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#888',
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   header: {
     paddingHorizontal: 20,

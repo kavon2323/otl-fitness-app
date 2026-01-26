@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,9 @@ import {
   ScrollView,
 } from 'react-native';
 import { useWorkoutStore } from '../store/workoutStore';
-import { WorkoutLog } from '../types';
+import { WorkoutLog, LoggedExercise } from '../types';
 import { allPrograms } from '../data/programs';
+import { getExerciseById } from '../data/exercises';
 import { colors } from '../theme';
 
 interface WorkoutLogsScreenProps {
@@ -19,6 +20,7 @@ export const WorkoutLogsScreen: React.FC<WorkoutLogsScreenProps> = ({
   onSelectWorkout,
 }) => {
   const { workoutHistory } = useWorkoutStore();
+  const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -130,49 +132,91 @@ export const WorkoutLogsScreen: React.FC<WorkoutLogsScreenProps> = ({
               </Text>
               {groupedWorkouts[dateKey].map((workout) => {
                 const stats = calculateStats(workout);
+                const isExpanded = expandedWorkout === workout.id;
                 return (
-                  <TouchableOpacity
-                    key={workout.id}
-                    style={styles.workoutCard}
-                    onPress={() => onSelectWorkout(workout)}
-                  >
-                    <View style={styles.workoutHeader}>
-                      <View>
-                        <Text style={styles.workoutDay}>
-                          {getDayName(workout.programId, workout.dayNumber)}
-                        </Text>
-                        <Text style={styles.workoutProgram}>
-                          {getProgramName(workout.programId)} • Week {workout.weekNumber}
+                  <View key={workout.id}>
+                    <TouchableOpacity
+                      style={[styles.workoutCard, isExpanded && styles.workoutCardExpanded]}
+                      onPress={() => setExpandedWorkout(isExpanded ? null : workout.id)}
+                    >
+                      <View style={styles.workoutHeader}>
+                        <View>
+                          <Text style={styles.workoutDay}>
+                            {getDayName(workout.programId, workout.dayNumber)}
+                          </Text>
+                          <Text style={styles.workoutProgram}>
+                            {getProgramName(workout.programId)} • Week {workout.weekNumber}
+                          </Text>
+                        </View>
+                        <Text style={styles.workoutTime}>
+                          {formatTime(workout.startTime)}
                         </Text>
                       </View>
-                      <Text style={styles.workoutTime}>
-                        {formatTime(workout.startTime)}
+
+                      <View style={styles.workoutStats}>
+                        <View style={styles.workoutStat}>
+                          <Text style={styles.workoutStatValue}>
+                            {formatDuration(workout.startTime, workout.endTime)}
+                          </Text>
+                          <Text style={styles.workoutStatLabel}>Duration</Text>
+                        </View>
+                        <View style={styles.workoutStat}>
+                          <Text style={styles.workoutStatValue}>{stats.totalSets}</Text>
+                          <Text style={styles.workoutStatLabel}>Sets</Text>
+                        </View>
+                        <View style={styles.workoutStat}>
+                          <Text style={styles.workoutStatValue}>
+                            {stats.totalVolume > 0
+                              ? `${Math.round(stats.totalVolume).toLocaleString()}`
+                              : '-'}
+                          </Text>
+                          <Text style={styles.workoutStatLabel}>Volume (lbs)</Text>
+                        </View>
+                      </View>
+
+                      <Text style={styles.viewMore}>
+                        {isExpanded ? 'Hide Details ↑' : 'View Details ↓'}
                       </Text>
-                    </View>
+                    </TouchableOpacity>
 
-                    <View style={styles.workoutStats}>
-                      <View style={styles.workoutStat}>
-                        <Text style={styles.workoutStatValue}>
-                          {formatDuration(workout.startTime, workout.endTime)}
-                        </Text>
-                        <Text style={styles.workoutStatLabel}>Duration</Text>
+                    {isExpanded && (
+                      <View style={styles.exerciseDetails}>
+                        {workout.exercises.map((exercise: LoggedExercise, idx: number) => {
+                          const exerciseData = getExerciseById(exercise.exerciseId);
+                          const completedSets = exercise.sets.filter(s => s.completed);
+                          return (
+                            <View key={idx} style={styles.exerciseCard}>
+                              <Text style={styles.exerciseName}>
+                                {exerciseData?.name || exercise.exerciseId}
+                              </Text>
+                              {completedSets.length > 0 ? (
+                                <View style={styles.setsContainer}>
+                                  <View style={styles.setsHeader}>
+                                    <Text style={styles.setsHeaderText}>Set</Text>
+                                    <Text style={styles.setsHeaderText}>Weight</Text>
+                                    <Text style={styles.setsHeaderText}>Reps</Text>
+                                  </View>
+                                  {completedSets.map((set, setIdx) => (
+                                    <View key={setIdx} style={styles.setRow}>
+                                      <Text style={styles.setNumber}>{set.setNumber}</Text>
+                                      <Text style={styles.setWeight}>
+                                        {set.weight ? `${set.weight} lbs` : '-'}
+                                      </Text>
+                                      <Text style={styles.setReps}>
+                                        {set.reps || '-'}
+                                      </Text>
+                                    </View>
+                                  ))}
+                                </View>
+                              ) : (
+                                <Text style={styles.noSetsText}>No sets completed</Text>
+                              )}
+                            </View>
+                          );
+                        })}
                       </View>
-                      <View style={styles.workoutStat}>
-                        <Text style={styles.workoutStatValue}>{stats.totalSets}</Text>
-                        <Text style={styles.workoutStatLabel}>Sets</Text>
-                      </View>
-                      <View style={styles.workoutStat}>
-                        <Text style={styles.workoutStatValue}>
-                          {stats.totalVolume > 0
-                            ? `${Math.round(stats.totalVolume).toLocaleString()}`
-                            : '-'}
-                        </Text>
-                        <Text style={styles.workoutStatLabel}>Volume (lbs)</Text>
-                      </View>
-                    </View>
-
-                    <Text style={styles.viewMore}>View Details →</Text>
-                  </TouchableOpacity>
+                    )}
+                  </View>
                 );
               })}
             </View>
@@ -291,6 +335,77 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
+  },
+  workoutCardExpanded: {
+    marginBottom: 0,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  exerciseDetails: {
+    backgroundColor: '#242424',
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: '#333',
+  },
+  exerciseCard: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  exerciseName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  setsContainer: {
+    gap: 4,
+  },
+  setsHeader: {
+    flexDirection: 'row',
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+    marginBottom: 4,
+  },
+  setsHeaderText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#666',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  setRow: {
+    flexDirection: 'row',
+    paddingVertical: 4,
+  },
+  setNumber: {
+    flex: 1,
+    fontSize: 14,
+    color: '#888',
+  },
+  setWeight: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  setReps: {
+    flex: 1,
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  noSetsText: {
+    fontSize: 13,
+    color: '#666',
+    fontStyle: 'italic',
   },
   bottomPadding: {
     height: 100,
