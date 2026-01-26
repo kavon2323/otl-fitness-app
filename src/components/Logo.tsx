@@ -26,7 +26,7 @@ export const Logo: React.FC<LogoProps> = ({
   const dimensions = sizes[size];
 
   // Use the logo image
-  const logoImage = require('../../assets/logo.png');
+  const logoImage = require('../../assets/otl_logo_app.png');
 
   return (
     <View style={[styles.container, style]}>

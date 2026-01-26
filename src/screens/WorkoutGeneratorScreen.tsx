@@ -7,6 +7,8 @@ import {
   ScrollView,
   Modal,
   TextInput,
+  Image,
+  Dimensions,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { useGeneratorStore } from '../store/generatorStore';
@@ -236,6 +238,13 @@ export const WorkoutGeneratorScreen: React.FC<WorkoutGeneratorScreenProps> = ({
         <View style={{ width: 60 }} />
       </View>
 
+      {/* Banner */}
+      <Image
+        source={require('../../assets/omega_banner.jpg')}
+        style={styles.banner}
+        resizeMode="cover"
+      />
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {currentWorkout ? (
           renderWorkoutPreview()
@@ -321,6 +330,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#fff',
+  },
+  banner: {
+    width: Dimensions.get('window').width,
+    height: 120,
   },
   content: {
     flex: 1,

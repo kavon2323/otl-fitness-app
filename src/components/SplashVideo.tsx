@@ -27,7 +27,7 @@ export function SplashVideo({ onFinish }: SplashVideoProps) {
     <View style={styles.container}>
       <Video
         ref={videoRef}
-        source={require('../../assets/Otl_load.MOV')}
+        source={require('../../assets/splash.mp4')}
         style={styles.video}
         resizeMode={ResizeMode.COVER}
         shouldPlay
