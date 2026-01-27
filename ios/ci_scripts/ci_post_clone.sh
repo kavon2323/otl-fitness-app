@@ -20,4 +20,19 @@ echo "=== Installing CocoaPods dependencies ==="
 cd "$CI_PRIMARY_REPOSITORY_PATH/ios"
 pod install
 
+echo "=== Pre-bundling JavaScript for Release ==="
+cd "$CI_PRIMARY_REPOSITORY_PATH"
+
+# Create the bundle directory
+mkdir -p ios/build
+
+# Export the bundle using Expo CLI
+npx expo export:embed \
+  --entry-file index.ts \
+  --platform ios \
+  --dev false \
+  --reset-cache \
+  --bundle-output ios/build/main.jsbundle \
+  --assets-dest ios/build/assets
+
 echo "=== Post-clone setup complete! ==="
