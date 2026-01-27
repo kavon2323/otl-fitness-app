@@ -23,7 +23,8 @@ pod install
 echo "=== Pre-bundling JavaScript for Release ==="
 cd "$CI_PRIMARY_REPOSITORY_PATH"
 
-# Create the bundle directory
+# Create the bundle directory in ios/build
+# The modified build script checks for this and uses it instead of Metro
 mkdir -p ios/build
 
 # Export the bundle using Expo CLI
@@ -34,5 +35,8 @@ npx expo export:embed \
   --reset-cache \
   --bundle-output ios/build/main.jsbundle \
   --assets-dest ios/build/assets
+
+echo "=== Bundle created at ios/build/main.jsbundle ==="
+ls -la ios/build/
 
 echo "=== Post-clone setup complete! ==="
