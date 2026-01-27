@@ -2,9 +2,11 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WorkoutLog, LoggedExercise, LoggedSet, WorkoutDay } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface ActiveWorkout {
   id: string;
+  userId: string;
   programId: string;
   dayNumber: number;
   weekNumber: number;
@@ -29,7 +31,7 @@ interface WorkoutState {
   workoutHistory: WorkoutLog[];
 
   // Actions
-  startWorkout: (programId: string, dayNumber: number, weekNumber: number) => void;
+  startWorkout: (programId: string, dayNumber: number, weekNumber: number) => Promise<void>;
   endWorkout: (notes?: string) => WorkoutLog | null;
   cancelWorkout: () => void;
 
@@ -50,9 +52,12 @@ interface WorkoutState {
   tickRestTimer: () => void;
 
   // History
-  getWorkoutHistory: (programId?: string, limit?: number) => WorkoutLog[];
-  getLastWorkoutForDay: (programId: string, dayNumber: number) => WorkoutLog | undefined;
+  getWorkoutHistory: (programId?: string, limit?: number) => Promise<WorkoutLog[]>;
+  getLastWorkoutForDay: (programId: string, dayNumber: number) => Promise<WorkoutLog | undefined>;
   isWorkoutCompletedThisWeek: (programId: string, dayNumber: number, weekNumber: number) => boolean;
+
+  // Clear all state (for logout)
+  clearAll: () => void;
 }
 
 const generateId = () => `workout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -68,9 +73,14 @@ export const useWorkoutStore = create<WorkoutState>()(
       },
       workoutHistory: [],
 
-      startWorkout: (programId: string, dayNumber: number, weekNumber: number) => {
+      startWorkout: async (programId: string, dayNumber: number, weekNumber: number) => {
+        // Get current user ID
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id || 'anonymous';
+
         const workout: ActiveWorkout = {
           id: generateId(),
+          userId,
           programId,
           dayNumber,
           weekNumber,
@@ -86,6 +96,7 @@ export const useWorkoutStore = create<WorkoutState>()(
 
         const completedWorkout: WorkoutLog = {
           id: activeWorkout.id,
+          userId: activeWorkout.userId,
           programId: activeWorkout.programId,
           dayNumber: activeWorkout.dayNumber,
           weekNumber: activeWorkout.weekNumber,
@@ -240,8 +251,18 @@ export const useWorkoutStore = create<WorkoutState>()(
         });
       },
 
-      getWorkoutHistory: (programId?: string, limit?: number) => {
+      getWorkoutHistory: async (programId?: string, limit?: number) => {
+        // Get current user ID to filter workouts
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id;
+
         let history = get().workoutHistory;
+
+        // Filter by current user
+        if (userId) {
+          history = history.filter((w) => w.userId === userId);
+        }
+
         if (programId) {
           history = history.filter((w) => w.programId === programId);
         }
@@ -251,13 +272,18 @@ export const useWorkoutStore = create<WorkoutState>()(
         return history;
       },
 
-      getLastWorkoutForDay: (programId: string, dayNumber: number) => {
+      getLastWorkoutForDay: async (programId: string, dayNumber: number) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id;
+
         return get().workoutHistory.find(
-          (w) => w.programId === programId && w.dayNumber === dayNumber
+          (w) => w.programId === programId && w.dayNumber === dayNumber && (!userId || w.userId === userId)
         );
       },
 
       isWorkoutCompletedThisWeek: (programId: string, dayNumber: number, weekNumber: number) => {
+        // Synchronous check using local workout history
+        // User ID filtering happens at the workout level when workouts are logged
         return get().workoutHistory.some(
           (w) =>
             w.programId === programId &&
@@ -265,6 +291,15 @@ export const useWorkoutStore = create<WorkoutState>()(
             w.weekNumber === weekNumber &&
             w.completed
         );
+      },
+
+      clearAll: () => {
+        // Clear all state (used on logout to prevent data leaking to next user)
+        set({
+          activeWorkout: null,
+          restTimer: { isRunning: false, timeRemaining: 0, totalTime: 0 },
+          workoutHistory: [],
+        });
       },
     }),
     {

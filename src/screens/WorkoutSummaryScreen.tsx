@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { WorkoutLog } from '../types';
-import { getExerciseById } from '../data/exercises';
+import { getExerciseById } from '../store/exerciseStore';
 import { colors } from '../theme';
 
 interface WorkoutSummaryScreenProps {

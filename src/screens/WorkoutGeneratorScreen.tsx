@@ -14,7 +14,7 @@ import Slider from '@react-native-community/slider';
 import { useGeneratorStore } from '../store/generatorStore';
 import { EQUIPMENT_OPTIONS, WORKOUT_TYPE_OPTIONS } from '../utils/workoutGenerator';
 import { EquipmentId, WorkoutType, GeneratedWorkout } from '../types';
-import { getExerciseById } from '../data/exercises';
+import { getExerciseById } from '../store/exerciseStore';
 import { colors } from '../theme';
 
 interface WorkoutGeneratorScreenProps {

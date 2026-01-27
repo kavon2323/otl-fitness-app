@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
+import { usePlayerProfileStore } from './playerProfileStore';
+import { useProgramStore } from './programStore';
+import { useWorkoutStore } from './workoutStore';
 
 interface AuthState {
   session: Session | null;
@@ -47,10 +50,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
       // Listen for auth state changes
-      supabase.auth.onAuthStateChange((_event, session) => {
+      supabase.auth.onAuthStateChange((event, session) => {
+        const currentUser = get().user;
+        const newUser = session?.user ?? null;
+
+        // Clear all user-specific stores when switching users
+        if (currentUser?.id && newUser?.id && currentUser.id !== newUser.id) {
+          // Different user logged in - clear all stores
+          usePlayerProfileStore.getState().clearProfile();
+          useProgramStore.getState().clearAll();
+          useWorkoutStore.getState().clearAll();
+        } else if (event === 'SIGNED_OUT') {
+          // User signed out - clear all stores
+          usePlayerProfileStore.getState().clearProfile();
+          useProgramStore.getState().clearAll();
+          useWorkoutStore.getState().clearAll();
+        }
+
         set({
           session,
-          user: session?.user ?? null,
+          user: newUser,
         });
       });
     } catch (error) {
@@ -107,6 +126,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
 
     await supabase.auth.signOut();
+
+    // Clear all user-specific stores to prevent data leaking to next user
+    usePlayerProfileStore.getState().clearProfile();
+    useProgramStore.getState().clearAll();
+    useWorkoutStore.getState().clearAll();
 
     set({
       session: null,

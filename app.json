@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.otlfitnessapp"
+      "bundleIdentifier": "com.otlperformance.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +23,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.otlfitnessapp"
+      "package": "com.otlperformance.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"

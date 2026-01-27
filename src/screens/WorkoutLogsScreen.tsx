@@ -9,7 +9,7 @@ import {
 import { useWorkoutStore } from '../store/workoutStore';
 import { WorkoutLog, LoggedExercise } from '../types';
 import { allPrograms } from '../data/programs';
-import { getExerciseById } from '../data/exercises';
+import { getExerciseById } from '../store/exerciseStore';
 import { colors } from '../theme';
 
 interface WorkoutLogsScreenProps {

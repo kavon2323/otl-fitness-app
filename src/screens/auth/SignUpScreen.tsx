@@ -88,7 +88,8 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToSignIn }
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              autoComplete="new-password"
+              textContentType="oneTimeCode"
+              autoComplete="off"
             />
 
             <TextInput
@@ -98,7 +99,8 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToSignIn }
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
-              autoComplete="new-password"
+              textContentType="oneTimeCode"
+              autoComplete="off"
             />
 
             <Text style={styles.passwordHint}>

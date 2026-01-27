@@ -7,7 +7,7 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
-import { exercises } from '../data/exercises';
+import { useExerciseStore } from '../store/exerciseStore';
 import { Exercise } from '../types';
 import { colors } from '../theme';
 
@@ -18,6 +18,7 @@ interface ExerciseLibraryScreenProps {
 export const ExerciseLibraryScreen: React.FC<ExerciseLibraryScreenProps> = ({
   onSelectExercise,
 }) => {
+  const { exercises } = useExerciseStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -25,7 +26,7 @@ export const ExerciseLibraryScreen: React.FC<ExerciseLibraryScreenProps> = ({
     const cats = new Set<string>();
     exercises.forEach((ex) => cats.add(ex.category));
     return Array.from(cats).sort();
-  }, []);
+  }, [exercises]);
 
   const filteredExercises = useMemo(() => {
     let filtered = exercises;

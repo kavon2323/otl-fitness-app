@@ -10,7 +10,10 @@ import {
   WorkoutExercise,
   ExerciseSet,
 } from '../types';
-import { exercises } from '../data/exercises';
+import { getAllExercises } from '../store/exerciseStore';
+
+// Get exercises dynamically from store
+const getExercises = () => getAllExercises();
 
 // Equipment options for multi-select
 export const EQUIPMENT_OPTIONS: EquipmentOption[] = [
@@ -137,7 +140,7 @@ const getAvailableExercises = (
   category: ExerciseCategory,
   selectedEquipment: string[]
 ): Exercise[] => {
-  return exercises.filter(
+  return getExercises().filter(
     (ex) => ex.category === category && isExerciseAvailable(ex, selectedEquipment)
   );
 };

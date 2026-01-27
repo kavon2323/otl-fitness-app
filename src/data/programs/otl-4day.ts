@@ -458,6 +458,8 @@ export const otl4DaySplit: Program = {
                 { setNumber: 2, targetReps: '6', completed: false },
                 { setNumber: 3, targetReps: '6', completed: false },
                 { setNumber: 4, targetReps: '6', completed: false },
+                { setNumber: 5, targetReps: '6', completed: false },
+                { setNumber: 6, targetReps: '6', completed: false },
               ],
               supersetGroup: '1',
               notes: 'Upper Body Prep Pull',

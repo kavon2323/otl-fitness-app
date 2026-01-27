@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Program, Exercise, ExerciseCategory, WorkoutDay, WorkoutExercise } from '../types';
 import { useProgramStore } from '../store/programStore';
-import { exercises, getExerciseById, defaultExercises } from '../data/exercises';
+import { getAllExercises, getExerciseById, defaultExercises } from '../store/exerciseStore';
 import { colors } from '../theme';
 
 interface ExerciseSelectionScreenProps {
@@ -20,6 +20,7 @@ interface ExerciseSelectionScreenProps {
 }
 
 interface ExerciseSlotInfo {
+  dayNumber: number; // Day this slot belongs to
   exerciseSlot: string; // e.g., "A1", "A2", "1A", "1B"
   categorySlot: string; // e.g., "PREP", "PRIMARY_SQUAT"
   displayName: string;
@@ -84,13 +85,15 @@ export const ExerciseSelectionScreen: React.FC<ExerciseSelectionScreenProps> = (
   const [selectedSlot, setSelectedSlot] = useState<ExerciseSlotInfo | null>(null);
 
   // Get exercise slot info from a workout exercise
-  const getSlotInfo = (exercise: WorkoutExercise): ExerciseSlotInfo => {
+  const getSlotInfo = (exercise: WorkoutExercise, dayNumber: number): ExerciseSlotInfo => {
     const categories = slotToCategoryMap[exercise.categorySlot] || ['prep'];
-    const filteredExercises = exercises.filter((ex) =>
+    const allExercises = getAllExercises();
+    const filteredExercises = allExercises.filter((ex) =>
       categories.includes(ex.category)
     );
 
     return {
+      dayNumber,
       exerciseSlot: exercise.exerciseSlot,
       categorySlot: exercise.categorySlot,
       displayName: formatCategoryName(exercise.categorySlot),
@@ -106,7 +109,7 @@ export const ExerciseSelectionScreen: React.FC<ExerciseSelectionScreenProps> = (
     day.sections.forEach((section) => {
       section.exercises.forEach((exercise) => {
         total++;
-        const exerciseId = getExerciseForSlot(program.id, exercise.exerciseSlot, exercise.categorySlot);
+        const exerciseId = getExerciseForSlot(program.id, day.dayNumber, exercise.exerciseSlot, exercise.categorySlot);
         if (exerciseId) selected++;
       });
     });
@@ -116,7 +119,7 @@ export const ExerciseSelectionScreen: React.FC<ExerciseSelectionScreenProps> = (
 
   const handleSelectExercise = (exerciseId: string) => {
     if (selectedSlot) {
-      setExerciseSelection(program.id, selectedSlot.exerciseSlot, selectedSlot.categorySlot, exerciseId);
+      setExerciseSelection(program.id, selectedSlot.dayNumber, selectedSlot.exerciseSlot, selectedSlot.categorySlot, exerciseId);
       setExerciseModalVisible(false);
       setSelectedSlot(null);
     }
@@ -129,7 +132,7 @@ export const ExerciseSelectionScreen: React.FC<ExerciseSelectionScreenProps> = (
 
   const renderExerciseOption = ({ item }: { item: Exercise }) => {
     const isSelected = selectedSlot &&
-      getExerciseForSlot(program.id, selectedSlot.exerciseSlot, selectedSlot.categorySlot) === item.id;
+      getExerciseForSlot(program.id, selectedSlot.dayNumber, selectedSlot.exerciseSlot, selectedSlot.categorySlot) === item.id;
     const isDefault = selectedSlot && defaultExercises[selectedSlot.categorySlot] === item.id;
 
     return (
@@ -235,9 +238,10 @@ export const ExerciseSelectionScreen: React.FC<ExerciseSelectionScreenProps> = (
             <Text style={styles.sectionName}>{section.name}</Text>
 
             {section.exercises.map((exercise, exerciseIndex) => {
-              const slotInfo = getSlotInfo(exercise);
+              const slotInfo = getSlotInfo(exercise, selectedDay.dayNumber);
               const selectedExerciseId = getExerciseForSlot(
                 program.id,
+                selectedDay.dayNumber,
                 exercise.exerciseSlot,
                 exercise.categorySlot
               );

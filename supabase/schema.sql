@@ -7,14 +7,23 @@
 -- ============================================
 
 -- User Profiles (extends Supabase auth.users)
+-- Subscription Tiers:
+--   free: Beta access (all features during beta)
+--   basecamp: $29/mo - 6 prebuilt programs + tracker
+--   basecamp_plus: $49/mo - Basecamp + workout generator, pro team chat, 10% store discount
+--   pro_coaching: $249/mo - Weekly calls, monthly programs, coach messaging, form reviews, 15% discount
 CREATE TABLE IF NOT EXISTS user_profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   display_name TEXT,
   role TEXT DEFAULT 'user' CHECK (role IN ('user', 'coach', 'admin')),
-  subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'premium', 'coaching')),
+  subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'basecamp', 'basecamp_plus', 'pro_coaching')),
+  subscription_status TEXT DEFAULT 'active' CHECK (subscription_status IN ('active', 'cancelled', 'past_due', 'trialing')),
+  subscription_expires_at TIMESTAMPTZ,
+  stripe_customer_id TEXT,
   current_program_id TEXT,
   current_week INTEGER DEFAULT 1,
+  store_discount_percent INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

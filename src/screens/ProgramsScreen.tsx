@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,21 +6,28 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import { allPrograms } from '../data/programs';
+import { allPrograms, getProgramsByType } from '../data/programs';
 import { useProgramStore } from '../store/programStore';
-import { Program } from '../types';
+import { Program, ProgramType } from '../types';
 import { colors } from '../theme';
 
 interface ProgramsScreenProps {
   onSelectProgram: (program: Program) => void;
-  onOpenGenerator?: () => void;
 }
+
+type TabType = 'strength' | 'mobility';
 
 export const ProgramsScreen: React.FC<ProgramsScreenProps> = ({
   onSelectProgram,
-  onOpenGenerator,
 }) => {
-  const { currentProgramId } = useProgramStore();
+  const { currentProgramId, currentMobilityProgramId } = useProgramStore();
+  const [activeTab, setActiveTab] = useState<TabType>('strength');
+
+  const strengthPrograms = useMemo(() => getProgramsByType('strength'), []);
+  const mobilityPrograms = useMemo(() => getProgramsByType('mobility'), []);
+
+  const displayedPrograms = activeTab === 'strength' ? strengthPrograms : mobilityPrograms;
+  const currentId = activeTab === 'strength' ? currentProgramId : currentMobilityProgramId;
 
   return (
     <View style={styles.container}>
@@ -29,84 +36,113 @@ export const ProgramsScreen: React.FC<ProgramsScreenProps> = ({
         <Text style={styles.subtitle}>Browse training programs</Text>
       </View>
 
+      {/* Tab Selector */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'strength' && styles.tabActive]}
+          onPress={() => setActiveTab('strength')}
+        >
+          <Text style={[styles.tabText, activeTab === 'strength' && styles.tabTextActive]}>
+            Strength
+          </Text>
+          {currentProgramId && (
+            <View style={styles.tabDot} />
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'mobility' && styles.tabActive]}
+          onPress={() => setActiveTab('mobility')}
+        >
+          <Text style={[styles.tabText, activeTab === 'mobility' && styles.tabTextActive]}>
+            Mobility
+          </Text>
+          {currentMobilityProgramId && (
+            <View style={styles.tabDot} />
+          )}
+        </TouchableOpacity>
+      </View>
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Workout Generator Card */}
-        {onOpenGenerator && (
-          <TouchableOpacity style={styles.generatorCard} onPress={onOpenGenerator}>
-            <View style={styles.generatorIcon}>
-              <Text style={styles.generatorIconText}>⚡</Text>
-            </View>
-            <View style={styles.generatorContent}>
-              <Text style={styles.generatorTitle}>Generate Workout</Text>
-              <Text style={styles.generatorDescription}>
-                Create a custom workout based on your equipment and goals
-              </Text>
-            </View>
-            <Text style={styles.generatorArrow}>→</Text>
-          </TouchableOpacity>
-        )}
+        <Text style={styles.sectionTitle}>
+          {activeTab === 'strength' ? 'Strength & Conditioning' : 'Mobility & Recovery'}
+        </Text>
 
-        <Text style={styles.sectionTitle}>Training Programs</Text>
+        {displayedPrograms.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>
+              No {activeTab} programs available yet.
+            </Text>
+          </View>
+        ) : (
+          displayedPrograms.map((program) => {
+            const isCurrentProgram = program.id === currentId;
+            const totalExercises = program.days.reduce(
+              (acc, day) =>
+                acc +
+                day.sections.reduce((sAcc, section) => sAcc + section.exercises.length, 0),
+              0
+            );
 
-        {allPrograms.map((program) => {
-          const isCurrentProgram = program.id === currentProgramId;
-          const totalExercises = program.days.reduce(
-            (acc, day) =>
-              acc +
-              day.sections.reduce((sAcc, section) => sAcc + section.exercises.length, 0),
-            0
-          );
-
-          return (
-            <TouchableOpacity
-              key={program.id}
-              style={[
-                styles.programCard,
-                isCurrentProgram && styles.programCardActive,
-              ]}
-              onPress={() => onSelectProgram(program)}
-            >
-              {isCurrentProgram && (
-                <View style={styles.currentBadge}>
-                  <Text style={styles.currentBadgeText}>CURRENT</Text>
-                </View>
-              )}
-              <Text style={styles.programName}>{program.name}</Text>
-              <Text style={styles.programDescription}>{program.description}</Text>
-              <View style={styles.programStats}>
-                <View style={styles.stat}>
-                  <Text style={styles.statValue}>{program.daysPerWeek}</Text>
-                  <Text style={styles.statLabel}>days/week</Text>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.stat}>
-                  <Text style={styles.statValue}>{program.days.length}</Text>
-                  <Text style={styles.statLabel}>workouts</Text>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.stat}>
-                  <Text style={styles.statValue}>{totalExercises}</Text>
-                  <Text style={styles.statLabel}>exercises</Text>
-                </View>
-              </View>
-              <View style={styles.daysPreview}>
-                {program.days.map((day) => (
-                  <View key={day.id} style={styles.dayPreview}>
-                    <Text style={styles.dayPreviewName}>Day {day.dayNumber}</Text>
-                    <Text style={styles.dayPreviewFocus} numberOfLines={1}>
-                      {day.focus || day.name}
+            return (
+              <TouchableOpacity
+                key={program.id}
+                style={[
+                  styles.programCard,
+                  isCurrentProgram && styles.programCardActive,
+                ]}
+                onPress={() => onSelectProgram(program)}
+              >
+                {isCurrentProgram && (
+                  <View style={styles.currentBadge}>
+                    <Text style={styles.currentBadgeText}>CURRENT</Text>
+                  </View>
+                )}
+                <Text style={styles.programName}>{program.name}</Text>
+                <Text style={styles.programDescription}>{program.description}</Text>
+                <View style={styles.programStats}>
+                  <View style={styles.stat}>
+                    <Text style={styles.statValue}>{program.daysPerWeek}</Text>
+                    <Text style={styles.statLabel}>days/week</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View style={styles.stat}>
+                    <Text style={styles.statValue}>{program.days.length}</Text>
+                    <Text style={styles.statLabel}>
+                      {activeTab === 'mobility' ? 'routines' : 'workouts'}
                     </Text>
                   </View>
-                ))}
-              </View>
-              <View style={styles.viewDetails}>
-                <Text style={styles.viewDetailsText}>
-                  {isCurrentProgram ? 'View Details' : 'View Program'} →
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+                  <View style={styles.statDivider} />
+                  <View style={styles.stat}>
+                    <Text style={styles.statValue}>{totalExercises}</Text>
+                    <Text style={styles.statLabel}>
+                      {activeTab === 'mobility' ? 'movements' : 'exercises'}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.daysPreview}>
+                  {program.days.slice(0, 4).map((day) => (
+                    <View key={day.id} style={styles.dayPreview}>
+                      <Text style={styles.dayPreviewName}>Day {day.dayNumber}</Text>
+                      <Text style={styles.dayPreviewFocus} numberOfLines={1}>
+                        {day.focus || day.name}
+                      </Text>
+                    </View>
+                  ))}
+                  {program.days.length > 4 && (
+                    <Text style={styles.moreDays}>
+                      +{program.days.length - 4} more days
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.viewDetails}>
+                  <Text style={styles.viewDetailsText}>
+                    {isCurrentProgram ? 'View Details' : 'View Program'} →
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })
+        )}
         <View style={styles.bottomPadding} />
       </ScrollView>
     </View>
@@ -133,50 +169,47 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 4,
   },
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+    gap: 12,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+    gap: 8,
+  },
+  tabActive: {
+    backgroundColor: 'rgba(231, 167, 0, 0.15)',
+    borderColor: colors.primary,
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#888',
+  },
+  tabTextActive: {
+    color: colors.primary,
+  },
+  tabDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+  },
   content: {
     flex: 1,
     padding: 20,
-  },
-  generatorCard: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  generatorIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  generatorIconText: {
-    fontSize: 24,
-  },
-  generatorContent: {
-    flex: 1,
-  },
-  generatorTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  generatorDescription: {
-    fontSize: 13,
-    color: '#888',
-    lineHeight: 18,
-  },
-  generatorArrow: {
-    fontSize: 20,
-    color: colors.primary,
-    marginLeft: 8,
+    paddingTop: 0,
   },
   sectionTitle: {
     fontSize: 14,
@@ -185,6 +218,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  emptyState: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 16,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
   programCard: {
     backgroundColor: '#2a2a2a',
@@ -267,6 +312,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#fff',
     flex: 1,
+  },
+  moreDays: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+    marginTop: 4,
   },
   viewDetails: {
     borderTopWidth: 1,

@@ -6,3 +6,6 @@ export { BottomTabBar } from './BottomTabBar';
 export type { TabName } from './BottomTabBar';
 export { Logo } from './Logo';
 export { SplashVideo } from './SplashVideo';
+export { UpgradeModal } from './UpgradeModal';
+export { LockedFeature } from './LockedFeature';
+export { WhyMessageCard, WhyMessageBadge, TaperBanner } from './WhyMessageCard';

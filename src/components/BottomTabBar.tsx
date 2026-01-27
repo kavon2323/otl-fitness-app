@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../theme';
 
-export type TabName = 'home' | 'exercises' | 'programs' | 'coaching' | 'logs';
+export type TabName = 'home' | 'programs' | 'logs' | 'resources';
 
 interface TabItem {
   name: TabName;
@@ -14,10 +14,9 @@ interface TabItem {
 
 const tabs: TabItem[] = [
   { name: 'home', label: 'Home', icon: 'home-outline', iconActive: 'home' },
-  { name: 'exercises', label: 'Exercises', icon: 'barbell-outline', iconActive: 'barbell' },
   { name: 'programs', label: 'Programs', icon: 'calendar-outline', iconActive: 'calendar' },
-  { name: 'coaching', label: 'Coaching', icon: 'people-outline', iconActive: 'people' },
   { name: 'logs', label: 'Logs', icon: 'stats-chart-outline', iconActive: 'stats-chart' },
+  { name: 'resources', label: 'Resources', icon: 'grid-outline', iconActive: 'grid' },
 ];
 
 interface BottomTabBarProps {

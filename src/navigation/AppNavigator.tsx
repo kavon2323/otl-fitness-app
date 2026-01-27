@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import {
   HomeScreen,
@@ -10,19 +10,28 @@ import {
   WorkoutSummaryScreen,
   ExerciseLibraryScreen,
   ProgramsScreen,
+  ProgramOverviewScreen,
   WorkoutLogsScreen,
   CoachingScreen,
-  WorkoutGeneratorScreen,
+  ResourcesScreen,
+  SettingsScreen,
+  ConfirmProfileScreen,
 } from '../screens';
 import { BottomTabBar, TabName } from '../components';
-import { Program, WorkoutDay, Exercise, WorkoutLog, GeneratedWorkout } from '../types';
+import { Program, WorkoutDay, Exercise, WorkoutLog } from '../types';
 import { useProgramStore } from '../store/programStore';
 import { useWorkoutStore } from '../store/workoutStore';
-import { getExerciseById } from '../data/exercises';
+import { usePlayerProfileStore } from '../store/playerProfileStore';
+import { getExerciseById } from '../store/exerciseStore';
+import { getStrengthProgramsByDaysPerWeek } from '../data/programs';
+import { assembleWorkoutForPlayer, AssembledWorkout } from '../utils/paintballWorkoutAssembler';
+import { generateWhyMessage, generateTaperStatus, WhyMessage } from '../utils/whyMessageGenerator';
 
 type Screen =
   | 'home'
+  | 'confirmProfile'
   | 'programSelect'
+  | 'programOverview'
   | 'exerciseSelection'
   | 'workoutDay'
   | 'exerciseDetail'
@@ -32,21 +41,68 @@ type Screen =
   | 'programs'
   | 'workoutLogs'
   | 'coaching'
-  | 'workoutGenerator';
+  | 'resources'
+  | 'settings';
 
-export const AppNavigator: React.FC = () => {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+interface AppNavigatorProps {
+  initialScreen?: 'home' | 'programOverview';
+  showRecommendedProgram?: boolean;
+}
+
+export const AppNavigator: React.FC<AppNavigatorProps> = ({
+  initialScreen = 'home',
+  showRecommendedProgram = false,
+}) => {
+  const { profile } = usePlayerProfileStore();
+  const { getCurrentProgram, currentProgramId, currentWeek } = useProgramStore();
+
+  // Get recommended program based on profile - prioritize OTL programs
+  const recommendedProgram = useMemo(() => {
+    if (!profile?.trainingDaysPerWeek) return null;
+    const programs = getStrengthProgramsByDaysPerWeek(profile.trainingDaysPerWeek);
+    // Prioritize OTL programs (they start with 'otl-')
+    const otlProgram = programs.find(p => p.id.startsWith('otl-'));
+    return otlProgram || (programs.length > 0 ? programs[0] : null);
+  }, [profile?.trainingDaysPerWeek]);
+
+  const [currentScreen, setCurrentScreen] = useState<Screen>(initialScreen);
   const [activeTab, setActiveTab] = useState<TabName>('home');
-  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
+  const [selectedProgram, setSelectedProgram] = useState<Program | null>(
+    showRecommendedProgram ? recommendedProgram : null
+  );
   const [selectedDay, setSelectedDay] = useState<WorkoutDay | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [completedWorkout, setCompletedWorkout] = useState<WorkoutLog | null>(null);
   const [previousScreen, setPreviousScreen] = useState<Screen>('home');
   const [returnToWorkout, setReturnToWorkout] = useState(false);
-  const [generatedWorkout, setGeneratedWorkout] = useState<GeneratedWorkout | null>(null);
+  const [isRecommendedProgram, setIsRecommendedProgram] = useState(showRecommendedProgram);
 
-  const { getCurrentProgram, currentProgramId, currentWeek } = useProgramStore();
+  // Set initial program for overview if coming from onboarding
+  useEffect(() => {
+    if (showRecommendedProgram && recommendedProgram && !selectedProgram) {
+      setSelectedProgram(recommendedProgram);
+    }
+  }, [showRecommendedProgram, recommendedProgram]);
+
   const { activeWorkout } = useWorkoutStore();
+
+  // Assemble workout based on player profile (position, side bias, phase, experience)
+  const assembledWorkout: AssembledWorkout | null = useMemo(() => {
+    if (!selectedDay || !profile) return null;
+    return assembleWorkoutForPlayer(selectedDay, profile);
+  }, [selectedDay, profile]);
+
+  // Generate Why message for the assembled workout
+  const whyMessage: WhyMessage | null = useMemo(() => {
+    if (!assembledWorkout || !profile) return null;
+    return generateWhyMessage(assembledWorkout, profile);
+  }, [assembledWorkout, profile]);
+
+  // Generate taper status if applicable
+  const taperStatus = useMemo(() => {
+    if (!profile) return null;
+    return generateTaperStatus(profile);
+  }, [profile]);
 
   // Track if we're in an active workout session
   const isWorkoutActive = !!activeWorkout;
@@ -69,22 +125,44 @@ export const AppNavigator: React.FC = () => {
           setCurrentScreen('home');
         }
         break;
-      case 'exercises':
-        setCurrentScreen('exerciseLibrary');
-        break;
       case 'programs':
         setCurrentScreen('programs');
         break;
-      case 'coaching':
-        setCurrentScreen('coaching');
-        break;
       case 'logs':
         setCurrentScreen('workoutLogs');
+        break;
+      case 'resources':
+        setCurrentScreen('resources');
         break;
     }
   };
 
   const handleSelectNewProgram = () => {
+    // Route to confirm profile screen where user can review/edit their profile
+    // and then generate their personalized program
+    setCurrentScreen('confirmProfile');
+  };
+
+  const handleProfileConfirmed = () => {
+    // After confirming profile and starting new cycle, show the recommended program
+    // Get fresh program based on current profile (don't rely on stale useMemo)
+    const currentProfile = usePlayerProfileStore.getState().profile;
+    const days = currentProfile?.trainingDaysPerWeek;
+
+    if (days) {
+      const programs = getStrengthProgramsByDaysPerWeek(days);
+      const otlProgram = programs.find(p => p.id.startsWith('otl-'));
+      const program = otlProgram || programs[0];
+
+      if (program) {
+        setSelectedProgram(program);
+        setIsRecommendedProgram(true);
+        setCurrentScreen('programOverview');
+        return;
+      }
+    }
+
+    // Fallback to program selection if no recommended program found
     setCurrentScreen('programSelect');
   };
 
@@ -166,30 +244,45 @@ export const AppNavigator: React.FC = () => {
 
   const handleSelectProgramFromList = (program: Program) => {
     setSelectedProgram(program);
-    setCurrentScreen('exerciseSelection');
+    setIsRecommendedProgram(false);
+    setCurrentScreen('programOverview');
   };
 
-  const handleOpenGenerator = () => {
-    setCurrentScreen('workoutGenerator');
+  const handleProgramOverviewStart = () => {
+    setCurrentScreen('home');
+    setActiveTab('home');
+    setIsRecommendedProgram(false);
   };
 
-  const handleStartGeneratedWorkout = (workout: GeneratedWorkout) => {
-    setGeneratedWorkout(workout);
-    setSelectedDay(workout.day);
-    setCurrentScreen('activeWorkout');
+  const handleSelectDifferentProgram = () => {
+    setCurrentScreen('programs');
+    setActiveTab('programs');
   };
 
   // Determine if we should show the tab bar
   const showTabBar = ![
     'activeWorkout',
     'workoutSummary',
+    'confirmProfile',
     'programSelect',
+    'programOverview',
     'exerciseSelection',
-    'workoutGenerator',
+    'settings',
   ].includes(currentScreen);
 
   const renderScreen = () => {
     switch (currentScreen) {
+      case 'confirmProfile':
+        return (
+          <ConfirmProfileScreen
+            onGenerateProgram={handleProfileConfirmed}
+            onBack={() => {
+              setCurrentScreen('home');
+              setActiveTab('home');
+            }}
+          />
+        );
+
       case 'programSelect':
         return (
           <ProgramSelectScreen
@@ -234,9 +327,11 @@ export const AppNavigator: React.FC = () => {
           setActiveTab('home');
           return null;
         }
+        // Use assembled workout if profile exists, otherwise use raw day
+        const dayToDisplay = assembledWorkout || selectedDay;
         return (
           <WorkoutDayScreen
-            day={selectedDay}
+            day={dayToDisplay}
             programId={programForDay.id}
             onStartWorkout={handleStartWorkout}
             onBack={() => {
@@ -245,6 +340,8 @@ export const AppNavigator: React.FC = () => {
               setActiveTab('home');
             }}
             onViewExercise={handleViewExercise}
+            whyMessage={whyMessage}
+            taperStatus={taperStatus}
           />
         );
 
@@ -260,9 +357,11 @@ export const AppNavigator: React.FC = () => {
           setActiveTab('home');
           return null;
         }
+        // Use assembled workout if profile exists, otherwise use raw day
+        const workoutToRun = assembledWorkout || selectedDay;
         return (
           <ActiveWorkoutScreen
-            day={selectedDay}
+            day={workoutToRun}
             programId={programForWorkout.id}
             weekNumber={currentWeek}
             onComplete={handleWorkoutComplete}
@@ -314,7 +413,27 @@ export const AppNavigator: React.FC = () => {
         return (
           <ProgramsScreen
             onSelectProgram={handleSelectProgramFromList}
-            onOpenGenerator={handleOpenGenerator}
+          />
+        );
+
+      case 'programOverview':
+        if (!selectedProgram) {
+          setCurrentScreen('home');
+          setActiveTab('home');
+          return null;
+        }
+        return (
+          <ProgramOverviewScreen
+            program={selectedProgram}
+            isRecommended={isRecommendedProgram}
+            onStartProgram={handleProgramOverviewStart}
+            onSelectDay={handleSelectDay}
+            onViewExercise={handleViewExercise}
+            onSelectDifferentProgram={handleSelectDifferentProgram}
+            onBack={isRecommendedProgram ? undefined : () => {
+              setCurrentScreen('programs');
+              setActiveTab('programs');
+            }}
           />
         );
 
@@ -324,15 +443,33 @@ export const AppNavigator: React.FC = () => {
       case 'coaching':
         return <CoachingScreen />;
 
-      case 'workoutGenerator':
+      case 'resources':
         return (
-          <WorkoutGeneratorScreen
-            onBack={() => {
-              setCurrentScreen('programs');
-              setActiveTab('programs');
+          <ResourcesScreen
+            onOpenExerciseLibrary={() => {
+              setPreviousScreen('resources');
+              setCurrentScreen('exerciseLibrary');
             }}
-            onStartWorkout={handleStartGeneratedWorkout}
-            onViewExercise={handleViewExercise}
+            onOpenCoaching={() => {
+              setPreviousScreen('resources');
+              setCurrentScreen('coaching');
+            }}
+            onOpenSupplements={() => {
+              // Coming soon - no action
+            }}
+            onOpenStore={() => {
+              // Coming soon - no action
+            }}
+          />
+        );
+
+      case 'settings':
+        return (
+          <SettingsScreen
+            onBack={() => {
+              setCurrentScreen('home');
+              setActiveTab('home');
+            }}
           />
         );
 
@@ -343,6 +480,7 @@ export const AppNavigator: React.FC = () => {
             onSelectNewProgram={handleSelectNewProgram}
             onSelectDay={handleSelectDay}
             onEditExercises={handleEditExercises}
+            onOpenSettings={() => setCurrentScreen('settings')}
           />
         );
     }

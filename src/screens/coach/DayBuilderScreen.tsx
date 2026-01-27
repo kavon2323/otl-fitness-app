@@ -9,7 +9,10 @@ import {
   Modal,
 } from 'react-native';
 import { useCoachStore } from '../../store/coachStore';
-import { getExerciseById, allExercises } from '../../data/exercises';
+import { getExerciseById, getAllExercises } from '../../store/exerciseStore';
+
+// Get all exercises from store
+const allExercises = getAllExercises();
 import { WorkoutSection, WorkoutExercise, ExerciseSet, Exercise } from '../../types';
 import { colors } from '../../theme';
 

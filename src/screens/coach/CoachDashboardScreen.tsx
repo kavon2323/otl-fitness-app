@@ -49,6 +49,22 @@ export const CoachDashboardScreen: React.FC<CoachDashboardScreenProps> = ({
     (a) => a.status === 'active' || a.status === 'assigned'
   );
 
+  // Calculate subscriber counts (mock data for now - would come from API)
+  // In production, this would filter clients by their subscription tier
+  const omegaSubscribers = activeClients.filter((c) =>
+    c.client?.subscriptionTier === 'omega'
+  ).length;
+  const proSubscribers = activeClients.filter((c) =>
+    c.client?.subscriptionTier === 'omega_pro'
+  ).length;
+
+  // Calculate to-dos (mock counts - would come from API)
+  // These represent: unread messages, pending form videos, scheduled calls
+  const pendingMessages: number = 0; // Would come from messages API
+  const pendingFormVideos: number = 0; // Would come from form review API
+  const upcomingCalls: number = 0; // Would come from scheduling API
+  const totalTodos = pendingMessages + pendingFormVideos + upcomingCalls;
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -76,17 +92,45 @@ export const CoachDashboardScreen: React.FC<CoachDashboardScreenProps> = ({
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{activeClients.length}</Text>
-            <Text style={styles.statLabel}>ACTIVE CLIENTS</Text>
+            <Text style={styles.statLabel}>MEMBERS</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{programs.length}</Text>
-            <Text style={styles.statLabel}>PROGRAMS</Text>
+            <Text style={[styles.statValue, styles.omegaStatValue]}>{omegaSubscribers}</Text>
+            <Text style={styles.statLabel}>OMEGA</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{activeAssignments.length}</Text>
-            <Text style={styles.statLabel}>ASSIGNMENTS</Text>
+            <Text style={[styles.statValue, styles.proStatValue]}>{proSubscribers}</Text>
+            <Text style={styles.statLabel}>PRO</Text>
           </View>
+          <TouchableOpacity style={[styles.statCard, totalTodos > 0 && styles.statCardHighlight]}>
+            <Text style={[styles.statValue, totalTodos > 0 && styles.todoStatValue]}>{totalTodos}</Text>
+            <Text style={styles.statLabel}>TO-DOS</Text>
+          </TouchableOpacity>
         </View>
+
+        {/* To-Do Breakdown (if any) */}
+        {totalTodos > 0 && (
+          <View style={styles.todoBreakdown}>
+            {pendingMessages > 0 && (
+              <View style={styles.todoItem}>
+                <Ionicons name="chatbubble" size={16} color={colors.primary} />
+                <Text style={styles.todoText}>{pendingMessages} message{pendingMessages !== 1 ? 's' : ''} to reply</Text>
+              </View>
+            )}
+            {pendingFormVideos > 0 && (
+              <View style={styles.todoItem}>
+                <Ionicons name="videocam" size={16} color={colors.primary} />
+                <Text style={styles.todoText}>{pendingFormVideos} form video{pendingFormVideos !== 1 ? 's' : ''} to review</Text>
+              </View>
+            )}
+            {upcomingCalls > 0 && (
+              <View style={styles.todoItem}>
+                <Ionicons name="call" size={16} color={colors.primary} />
+                <Text style={styles.todoText}>{upcomingCalls} upcoming call{upcomingCalls !== 1 ? 's' : ''}</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Quick Actions */}
         <Text style={styles.sectionTitle}>QUICK ACTIONS</Text>
@@ -235,29 +279,60 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.sm,
     marginBottom: spacing['2xl'],
   },
   statCard: {
     flex: 1,
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border,
   },
   statValue: {
-    fontSize: typography.fontSize['2xl'],
+    fontSize: typography.fontSize.xl,
     fontWeight: typography.fontWeight.bold,
-    color: colors.primary,
+    color: colors.text,
   },
   statLabel: {
-    fontSize: 10,
+    fontSize: 9,
     color: colors.textSecondary,
     marginTop: spacing.xs,
     fontWeight: typography.fontWeight.bold,
     letterSpacing: 0.5,
+  },
+  omegaStatValue: {
+    color: colors.primary, // Gold for Omega
+  },
+  proStatValue: {
+    color: '#9c27b0', // Purple for Pro
+  },
+  statCardHighlight: {
+    borderColor: colors.primary,
+    backgroundColor: 'rgba(231, 167, 0, 0.1)',
+  },
+  todoStatValue: {
+    color: '#ff6b6b',
+  },
+  todoBreakdown: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing['2xl'],
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.sm,
+  },
+  todoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  todoText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.text,
   },
   sectionTitle: {
     fontSize: typography.fontSize.xs,

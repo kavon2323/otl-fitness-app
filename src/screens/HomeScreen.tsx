@@ -10,58 +10,82 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { useProgramStore } from '../store/programStore';
 import { useWorkoutStore } from '../store/workoutStore';
-import { Program, WorkoutDay } from '../types';
+import { usePlayerProfileStore } from '../store/playerProfileStore';
+import { Program, WorkoutDay, ProgramType } from '../types';
 import { Logo } from '../components';
 import { colors, typography, spacing, borderRadius } from '../theme';
+import { supabase } from '../lib/supabase';
+import { formatPosition, formatSideBias, formatPhase } from '../types/paintball';
 
 interface HomeScreenProps {
   onSelectNewProgram: () => void;
   onSelectDay: (day: WorkoutDay) => void;
   onEditExercises: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   onSelectNewProgram,
   onSelectDay,
   onEditExercises,
+  onOpenSettings,
 }) => {
   const { user, signOut } = useAuthStore();
-  const { getCurrentProgram, currentWeek, setCurrentWeek, resetProgram } = useProgramStore();
+  const { getCurrentProgram, currentWeek, currentMobilityWeek, setCurrentWeek, resetProgram } = useProgramStore();
   const { isWorkoutCompletedThisWeek } = useWorkoutStore();
+  const { profile, clearProfile } = usePlayerProfileStore();
 
-  const currentProgram = getCurrentProgram();
+  const currentProgram = getCurrentProgram('strength');
+  const currentMobilityProgram = getCurrentProgram('mobility');
 
-  const handleChangeProgram = () => {
-    resetProgram();
+  // DEV: Reset player profile to test onboarding
+  const handleResetProfile = async () => {
+    try {
+      // Delete from Supabase
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        await supabase.from('player_profiles').delete().eq('user_id', authUser.id);
+      }
+      // Clear local state
+      clearProfile();
+    } catch (error) {
+      console.error('Error resetting profile:', error);
+    }
+  };
+
+  const handleChangeProgram = (programType: ProgramType = 'strength') => {
+    resetProgram(programType);
     onSelectNewProgram();
   };
 
+  // Show empty state only if no strength program (mobility is optional)
   if (!currentProgram) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Logo size="small" />
-            <View style={styles.headerText}>
-              <Text style={styles.greeting}>Welcome,</Text>
-              <Text style={styles.email}>{user?.email}</Text>
-            </View>
-          </View>
-          <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-            <Ionicons name="log-out-outline" size={20} color={colors.primary} />
+          <TouchableOpacity style={styles.profileButton} onPress={onOpenSettings}>
+            <Ionicons name="person-circle-outline" size={32} color={colors.primary} />
           </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Logo size="small" />
+          </View>
+          <View style={styles.headerRight} />
         </View>
 
         <View style={styles.emptyState}>
           <Logo size="large" showText />
-          <Text style={styles.emptyTitle}>No Active Program</Text>
+          <Text style={styles.emptyTitle}>Ready to Train?</Text>
           <Text style={styles.emptySubtitle}>
-            Select a training program to get started
+            Get a personalized training program built for your position, experience level, and goals
           </Text>
           <TouchableOpacity style={styles.selectButton} onPress={onSelectNewProgram}>
-            <Text style={styles.selectButtonText}>Select Program</Text>
+            <Ionicons name="fitness" size={22} color={colors.text} style={styles.buttonIconLeft} />
+            <Text style={styles.selectButtonText}>Get My Custom Plan</Text>
             <Ionicons name="arrow-forward" size={20} color={colors.text} style={styles.buttonIcon} />
           </TouchableOpacity>
+          <Text style={styles.emptyHint}>
+            Answer a few questions and we'll build your program
+          </Text>
         </View>
       </View>
     );
@@ -70,16 +94,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Logo size="small" />
-          <View style={styles.headerText}>
-            <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.email}>{user?.email}</Text>
-          </View>
-        </View>
-        <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-          <Ionicons name="log-out-outline" size={20} color={colors.primary} />
+        <TouchableOpacity style={styles.profileButton} onPress={onOpenSettings}>
+          <Ionicons name="person-circle-outline" size={32} color={colors.primary} />
         </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Logo size="small" />
+        </View>
+        <View style={styles.headerRight} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -89,7 +110,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Text style={styles.currentLabel}>CURRENT PROGRAM</Text>
               <Text style={styles.programName}>{currentProgram.name}</Text>
             </View>
-            <TouchableOpacity onPress={handleChangeProgram} style={styles.changeButton}>
+            <TouchableOpacity onPress={() => handleChangeProgram('strength')} style={styles.changeButton}>
               <Text style={styles.changeText}>Change</Text>
             </TouchableOpacity>
           </View>
@@ -124,6 +145,34 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <Text style={styles.editExercisesText}>Edit Exercise Selections</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Player Profile Card */}
+        {profile && (
+          <View style={styles.profileCard}>
+            <View style={styles.profileHeader}>
+              <Text style={styles.profileLabel}>YOUR TRAINING PROFILE</Text>
+              <TouchableOpacity onPress={handleResetProfile} style={styles.resetButton}>
+                <Text style={styles.resetText}>Reset</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.profileBadges}>
+              <View style={styles.profileBadge}>
+                <Text style={styles.badgeText}>{formatPosition(profile.primaryPosition)}</Text>
+              </View>
+              <View style={styles.profileBadge}>
+                <Text style={styles.badgeText}>{formatSideBias(profile.fieldSideBias)}</Text>
+              </View>
+              <View style={styles.profileBadge}>
+                <Text style={styles.badgeText}>{formatPhase(profile.currentPhase)}</Text>
+              </View>
+            </View>
+            {profile.nextTournamentDate && (
+              <Text style={styles.tournamentDate}>
+                Next Tournament: {new Date(profile.nextTournamentDate).toLocaleDateString()}
+              </Text>
+            )}
+          </View>
+        )}
 
         <Text style={styles.sectionTitle}>THIS WEEK'S WORKOUTS</Text>
 
@@ -173,6 +222,65 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           );
         })}
 
+        {/* Mobility Program Section */}
+        {currentMobilityProgram ? (
+          <>
+            <View style={styles.mobilityCard}>
+              <View style={styles.programHeader}>
+                <View>
+                  <Text style={styles.mobilityLabel}>MOBILITY PROGRAM</Text>
+                  <Text style={styles.programName}>{currentMobilityProgram.name}</Text>
+                </View>
+                <TouchableOpacity onPress={() => handleChangeProgram('mobility')} style={styles.changeButton}>
+                  <Text style={styles.changeText}>Change</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.mobilityDays}>
+                {currentMobilityProgram.days.slice(0, 3).map((day) => {
+                  const isCompleted = isWorkoutCompletedThisWeek(currentMobilityProgram.id, day.dayNumber, currentMobilityWeek);
+                  return (
+                    <TouchableOpacity
+                      key={day.id}
+                      style={[styles.mobilityDayCard, isCompleted && styles.mobilityDayCardCompleted]}
+                      onPress={() => onSelectDay(day)}
+                    >
+                      <Text style={[styles.mobilityDayName, isCompleted && styles.mobilityDayNameCompleted]}>
+                        {day.focus || day.name}
+                      </Text>
+                      {isCompleted ? (
+                        <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                      ) : (
+                        <Ionicons name="play-circle-outline" size={20} color={colors.textMuted} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {currentMobilityProgram.days.length > 3 && (
+                <Text style={styles.moreMobilityDays}>
+                  +{currentMobilityProgram.days.length - 3} more routines
+                </Text>
+              )}
+            </View>
+          </>
+        ) : (
+          <TouchableOpacity style={styles.addMobilityCard} onPress={onSelectNewProgram}>
+            <View style={styles.addMobilityContent}>
+              <View style={styles.addMobilityIcon}>
+                <Ionicons name="body-outline" size={24} color={colors.primary} />
+              </View>
+              <View style={styles.addMobilityText}>
+                <Text style={styles.addMobilityTitle}>Add Mobility Program</Text>
+                <Text style={styles.addMobilitySubtitle}>
+                  Stack a daily mobility routine alongside your strength training
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        )}
+
         <View style={styles.bottomPadding} />
       </ScrollView>
     </View>
@@ -196,6 +304,19 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerRight: {
+    width: 40,
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   headerText: {
@@ -261,6 +382,15 @@ const styles = StyleSheet.create({
   },
   buttonIcon: {
     marginLeft: spacing.sm,
+  },
+  buttonIconLeft: {
+    marginRight: spacing.sm,
+  },
+  emptyHint: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textMuted,
+    marginTop: spacing.lg,
+    textAlign: 'center',
   },
   programCard: {
     backgroundColor: colors.surface,
@@ -441,5 +571,140 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: spacing['3xl'],
+  },
+  // Profile Card Styles
+  profileCard: {
+    backgroundColor: 'rgba(231, 167, 0, 0.1)',
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing['2xl'],
+    borderWidth: 1,
+    borderColor: 'rgba(231, 167, 0, 0.2)',
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  profileLabel: {
+    fontSize: typography.fontSize.xs,
+    color: colors.primary,
+    fontWeight: typography.fontWeight.bold,
+    letterSpacing: 1.5,
+  },
+  resetButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  resetText: {
+    color: '#ff6b6b',
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.medium,
+  },
+  profileBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  profileBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+  },
+  badgeText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.text,
+    fontWeight: typography.fontWeight.medium,
+  },
+  tournamentDate: {
+    fontSize: typography.fontSize.xs,
+    color: colors.primary,
+    marginTop: spacing.md,
+  },
+  // Mobility Card Styles
+  mobilityCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    marginTop: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  mobilityLabel: {
+    fontSize: typography.fontSize.xs,
+    color: '#4ecdc4',
+    fontWeight: typography.fontWeight.bold,
+    letterSpacing: 1.5,
+    marginBottom: spacing.xs,
+  },
+  mobilityDays: {
+    gap: spacing.sm,
+  },
+  mobilityDayCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surfaceLight,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+  },
+  mobilityDayCardCompleted: {
+    backgroundColor: 'rgba(78, 205, 196, 0.1)',
+  },
+  mobilityDayName: {
+    fontSize: typography.fontSize.sm,
+    color: colors.text,
+    fontWeight: typography.fontWeight.medium,
+  },
+  mobilityDayNameCompleted: {
+    color: colors.textSecondary,
+  },
+  moreMobilityDays: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.md,
+  },
+  addMobilityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(78, 205, 196, 0.1)',
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    marginTop: spacing.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(78, 205, 196, 0.2)',
+    borderStyle: 'dashed',
+  },
+  addMobilityContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  addMobilityIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.lg,
+    backgroundColor: 'rgba(78, 205, 196, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  addMobilityText: {
+    flex: 1,
+  },
+  addMobilityTitle: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  addMobilitySubtitle: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textSecondary,
+    lineHeight: 16,
   },
 });

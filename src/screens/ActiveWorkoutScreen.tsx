@@ -11,9 +11,8 @@ import {
 } from 'react-native';
 import { WorkoutDay, WorkoutExercise, LoggedSet } from '../types';
 import { useWorkoutStore } from '../store/workoutStore';
-import { useProgramStore } from '../store/programStore';
 import { usePreferencesStore } from '../store/preferencesStore';
-import { getExerciseById } from '../data/exercises';
+import { getExerciseById } from '../store/exerciseStore';
 import { WorkoutTimer } from '../components';
 import { colors } from '../theme';
 
@@ -60,7 +59,6 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
     completeSet,
   } = useWorkoutStore();
 
-  const { getExerciseForSlot } = useProgramStore();
   const { supersetModeEnabled, toggleSupersetMode } = usePreferencesStore();
 
   // State for current position
@@ -195,9 +193,8 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
   const currentExercise = currentFlatExercise?.exercise;
   const currentSet = currentExercise?.sets[currentSetIndex];
 
-  const exerciseId = currentExercise
-    ? getExerciseForSlot(programId, currentExercise.exerciseSlot, currentExercise.categorySlot)
-    : '';
+  // Use exerciseId directly from the workout data (populated by assembler)
+  const exerciseId = currentExercise?.exerciseId || '';
   const exerciseData = exerciseId ? getExerciseById(exerciseId) : null;
   const exerciseName = exerciseData?.name || currentExercise?.notes || currentExercise?.categorySlot || '';
 
@@ -249,15 +246,60 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
     if (isInSuperset) {
       // SUPERSET MODE: Alternate between exercises
       const isLastInGroup = supersetInfo.isLastInGroup;
-      const isLastSetRound = currentSetIndex >= currentExercise.sets.length - 1;
+      const isLastSetForCurrentExercise = currentSetIndex >= currentExercise.sets.length - 1;
+      const nextRoundIndex = currentSetIndex + 1;
+
+      // Check if ALL exercises in the superset have completed all sets for the next round
+      const anyExerciseHasMoreSets = supersetInfo.exercises.some(
+        (fe) => nextRoundIndex < fe.exercise.sets.length
+      );
 
       if (!isLastInGroup) {
-        // Move to next exercise in superset (no rest)
-        const nextExerciseInGroup = supersetInfo.exercises[supersetInfo.positionInGroup + 1];
-        setCurrentExerciseIndex(nextExerciseInGroup.exerciseIndex);
-        // Keep same set index - we're doing the same "round"
-      } else if (isLastSetRound) {
-        // Last exercise in group AND last set round - move to next group or finish
+        // Find next exercise in superset that still has sets remaining for this round
+        let nextPos = supersetInfo.positionInGroup + 1;
+        while (
+          nextPos < supersetInfo.exercises.length &&
+          currentSetIndex >= supersetInfo.exercises[nextPos].exercise.sets.length
+        ) {
+          nextPos++;
+        }
+
+        if (nextPos < supersetInfo.exercises.length) {
+          // Move to next exercise in superset that has sets remaining (no rest)
+          const nextExerciseInGroup = supersetInfo.exercises[nextPos];
+          setCurrentExerciseIndex(nextExerciseInGroup.exerciseIndex);
+        } else {
+          // All remaining exercises in this round are done, check if we need another round
+          if (anyExerciseHasMoreSets) {
+            // Find first exercise that has sets remaining for next round
+            const nextExIndex = supersetInfo.exercises.findIndex(
+              (fe) => nextRoundIndex < fe.exercise.sets.length
+            );
+            if (nextExIndex !== -1) {
+              startRest(getDefaultRestTime());
+              setNextAfterRest({
+                exerciseIndex: supersetInfo.exercises[nextExIndex].exerciseIndex,
+                setIndex: nextRoundIndex,
+              });
+            }
+          } else {
+            // All exercises done - move to next group
+            const lastExerciseInGroup = supersetInfo.exercises[supersetInfo.exercises.length - 1];
+            const nextExerciseIndex = lastExerciseInGroup.exerciseIndex + 1;
+
+            if (nextExerciseIndex >= flatExercises.length) {
+              setIsWorkoutComplete(true);
+            } else {
+              startRest(getDefaultRestTime());
+              setNextAfterRest({
+                exerciseIndex: nextExerciseIndex,
+                setIndex: 0,
+              });
+            }
+          }
+        }
+      } else if (!anyExerciseHasMoreSets) {
+        // Last exercise in group AND no exercise has more sets - move to next group or finish
         const lastExerciseInGroup = supersetInfo.exercises[supersetInfo.exercises.length - 1];
         const nextExerciseIndex = lastExerciseInGroup.exerciseIndex + 1;
 
@@ -273,15 +315,18 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
           });
         }
       } else {
-        // Last exercise in group but more sets to do - rest, then go back to first exercise
-        const firstExerciseInGroup = supersetInfo.exercises[0];
-        startRest(getDefaultRestTime());
-        // After rest, we'll advance to next set and go back to first exercise
-        // Store the target for after rest
-        setNextAfterRest({
-          exerciseIndex: firstExerciseInGroup.exerciseIndex,
-          setIndex: currentSetIndex + 1,
-        });
+        // Last exercise in group but some exercise has more sets to do
+        // Find first exercise that has sets remaining for next round
+        const nextExIndex = supersetInfo.exercises.findIndex(
+          (fe) => nextRoundIndex < fe.exercise.sets.length
+        );
+        if (nextExIndex !== -1) {
+          startRest(getDefaultRestTime());
+          setNextAfterRest({
+            exerciseIndex: supersetInfo.exercises[nextExIndex].exerciseIndex,
+            setIndex: nextRoundIndex,
+          });
+        }
       }
     } else {
       // NON-SUPERSET MODE: Original behavior (rest after each set)
@@ -387,7 +432,8 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
 
     flatExercises.forEach((fe) => {
       totalSets += fe.exercise.sets.length;
-      const exId = getExerciseForSlot(programId, fe.exercise.exerciseSlot, fe.exercise.categorySlot);
+      // Use exerciseId directly from the workout data
+      const exId = fe.exercise.exerciseId || '';
       const logged = getLoggedSetsForExercise(exId);
       completedSets += logged.filter((s) => s.completed).length;
     });
@@ -407,7 +453,7 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
 
   // Workout Complete Screen
   if (isWorkoutComplete) {
-    const workoutDurationMs = Date.now() - activeWorkout.startTime;
+    const workoutDurationMs = Date.now() - new Date(activeWorkout.startTime).getTime();
     const workoutMinutes = Math.floor(workoutDurationMs / 60000);
 
     return (
@@ -459,11 +505,8 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
     if (nextAfterRest) {
       // Superset: going back to first exercise for next round
       const nextExercise = flatExercises[nextAfterRest.exerciseIndex];
-      const nextExId = getExerciseForSlot(
-        programId,
-        nextExercise.exercise.exerciseSlot,
-        nextExercise.exercise.categorySlot
-      );
+      // Use exerciseId directly from the workout data
+      const nextExId = nextExercise.exercise.exerciseId || '';
       const nextExData = nextExId ? getExerciseById(nextExId) : null;
       nextUpText = `Round ${nextAfterRest.setIndex + 1}`;
       nextUpName = nextExData?.name || nextExercise.exercise.notes || '';
@@ -472,11 +515,8 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
       const nextExercise = isLastSet ? flatExercises[currentExerciseIndex + 1] : null;
 
       if (nextExercise) {
-        const nextExId = getExerciseForSlot(
-          programId,
-          nextExercise.exercise.exerciseSlot,
-          nextExercise.exercise.categorySlot
-        );
+        // Use exerciseId directly from the workout data
+        const nextExId = nextExercise.exercise.exerciseId || '';
         const nextExData = nextExId ? getExerciseById(nextExId) : null;
         nextUpText = 'Next Exercise';
         nextUpName = nextExData?.name || nextExercise.exercise.notes || '';

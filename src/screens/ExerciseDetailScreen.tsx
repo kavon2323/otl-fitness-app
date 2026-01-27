@@ -40,7 +40,7 @@ export const ExerciseDetailScreen: React.FC<ExerciseDetailScreenProps> = ({
   showReturnToWorkout = false,
   onReturnToWorkout,
 }) => {
-  const videoId = getYoutubeVideoId(exercise.videoUrl);
+  const videoId = exercise.videoUrl ? getYoutubeVideoId(exercise.videoUrl) : null;
   const screenWidth = Dimensions.get('window').width;
   const videoHeight = (screenWidth - 40) * (9 / 16);
 

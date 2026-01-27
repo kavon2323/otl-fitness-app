@@ -7,9 +7,10 @@ import {
   ScrollView,
 } from 'react-native';
 import { WorkoutDay, WorkoutExercise } from '../types';
-import { getExerciseById } from '../data/exercises';
-import { useProgramStore } from '../store/programStore';
+import { getExerciseById } from '../store/exerciseStore';
 import { colors } from '../theme';
+import { WhyMessageCard, TaperBanner } from '../components/WhyMessageCard';
+import { WhyMessage } from '../utils/whyMessageGenerator';
 
 interface WorkoutDayScreenProps {
   day: WorkoutDay;
@@ -17,6 +18,11 @@ interface WorkoutDayScreenProps {
   onStartWorkout: () => void;
   onBack: () => void;
   onViewExercise: (exerciseId: string) => void;
+  whyMessage?: WhyMessage | null;
+  taperStatus?: {
+    status: string;
+    severity: 'none' | 'light' | 'moderate' | 'heavy';
+  } | null;
 }
 
 export const WorkoutDayScreen: React.FC<WorkoutDayScreenProps> = ({
@@ -25,12 +31,13 @@ export const WorkoutDayScreen: React.FC<WorkoutDayScreenProps> = ({
   onStartWorkout,
   onBack,
   onViewExercise,
+  whyMessage,
+  taperStatus,
 }) => {
-  const { getExerciseForSlot } = useProgramStore();
-
   const renderExercise = (exercise: WorkoutExercise, index: number) => {
-    const exerciseId = getExerciseForSlot(programId, exercise.exerciseSlot, exercise.categorySlot);
-    const exerciseData = getExerciseById(exerciseId);
+    // Use the exerciseId from the workout data directly (populated by assembler or store)
+    const exerciseId = exercise.exerciseId;
+    const exerciseData = exerciseId ? getExerciseById(exerciseId) : null;
     const exerciseName = exerciseData?.name || exercise.notes || exercise.categorySlot;
 
     // Format sets display
@@ -133,6 +140,16 @@ export const WorkoutDayScreen: React.FC<WorkoutDayScreenProps> = ({
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Taper Warning Banner */}
+        {taperStatus && (
+          <TaperBanner status={taperStatus.status} severity={taperStatus.severity} />
+        )}
+
+        {/* Why Message Card - explains workout customization */}
+        {whyMessage && (
+          <WhyMessageCard message={whyMessage} taperStatus={taperStatus} />
+        )}
+
         {day.sections.map((section, sectionIndex) => (
           <View key={`${section.name}-${sectionIndex}`} style={styles.section}>
             <Text style={styles.sectionName}>{section.name}</Text>

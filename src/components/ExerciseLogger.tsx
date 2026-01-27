@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { WorkoutExercise, LoggedSet } from '../types';
 import { SetLogger } from './SetLogger';
-import { getExerciseById } from '../data/exercises';
+import { getExerciseById } from '../store/exerciseStore';
 import { colors } from '../theme';
 
 interface ExerciseLoggerProps {
