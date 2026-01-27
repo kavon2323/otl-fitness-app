@@ -6,11 +6,17 @@
 set -e
 
 echo "=== Installing Homebrew dependencies ==="
-brew install node
+brew install node coreutils
+
+# Add GNU coreutils to PATH (provides GNU realpath with -m support)
+export PATH="/usr/local/opt/coreutils/libexec/gnubin:$PATH"
 
 echo "=== Node version ==="
 node --version
 npm --version
+
+echo "=== realpath version (should be GNU) ==="
+realpath --version || echo "BSD realpath (no --version flag)"
 
 echo "=== Installing Node.js dependencies ==="
 cd "$CI_PRIMARY_REPOSITORY_PATH"

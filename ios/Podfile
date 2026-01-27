@@ -69,5 +69,16 @@ target 'otlfitnessapp' do
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
       end
     end
+
+    # Fix realpath -m compatibility for Xcode Cloud (macOS BSD vs GNU)
+    # The CocoaPods scripts use GNU realpath -m which doesn't exist on macOS
+    script_path = "Pods/Target Support Files/Pods-otlfitnessapp/Pods-otlfitnessapp-resources.sh"
+    if File.exist?(script_path)
+      script = File.read(script_path)
+      # Replace realpath -m with a BSD-compatible alternative
+      script = script.gsub('realpath -m', 'perl -MCwd -e \'print Cwd::abs_path(shift)\' --')
+      File.write(script_path, script)
+      puts "[Podfile] Patched #{script_path} for BSD realpath compatibility"
+    end
   end
 end
