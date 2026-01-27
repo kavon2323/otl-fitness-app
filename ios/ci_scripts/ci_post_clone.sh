@@ -6,17 +6,11 @@
 set -e
 
 echo "=== Installing Homebrew dependencies ==="
-brew install node coreutils
-
-# Add GNU coreutils to PATH (provides GNU realpath with -m support)
-export PATH="/usr/local/opt/coreutils/libexec/gnubin:$PATH"
+brew install node
 
 echo "=== Node version ==="
 node --version
 npm --version
-
-echo "=== realpath version (should be GNU) ==="
-realpath --version || echo "BSD realpath (no --version flag)"
 
 echo "=== Installing Node.js dependencies ==="
 cd "$CI_PRIMARY_REPOSITORY_PATH"
@@ -26,11 +20,20 @@ echo "=== Installing CocoaPods dependencies ==="
 cd "$CI_PRIMARY_REPOSITORY_PATH/ios"
 pod install
 
+echo "=== Patching realpath -m for BSD compatibility ==="
+# Find and patch all shell scripts that use realpath -m (GNU syntax not available on macOS)
+find "$CI_PRIMARY_REPOSITORY_PATH/ios/Pods" -name "*.sh" -type f | while read script; do
+  if grep -q "realpath -m" "$script" 2>/dev/null; then
+    echo "Patching: $script"
+    sed -i '' 's/realpath -m/realpath/g' "$script"
+  fi
+done
+echo "Patching complete"
+
 echo "=== Pre-bundling JavaScript for Release ==="
 cd "$CI_PRIMARY_REPOSITORY_PATH"
 
 # Create the bundle directory in ios/build
-# The modified build script checks for this and uses it instead of Metro
 mkdir -p ios/build
 
 # Export the bundle using Expo CLI
