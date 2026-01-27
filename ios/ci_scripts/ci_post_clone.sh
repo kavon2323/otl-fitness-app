@@ -14,7 +14,7 @@ npm --version
 
 echo "=== Installing Node.js dependencies ==="
 cd "$CI_PRIMARY_REPOSITORY_PATH"
-npm install
+npm install --legacy-peer-deps
 
 echo "=== Installing CocoaPods dependencies ==="
 cd "$CI_PRIMARY_REPOSITORY_PATH/ios"
