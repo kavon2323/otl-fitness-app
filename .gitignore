@@ -37,5 +37,6 @@ yarn-error.*
 *.tsbuildinfo
 
 # generated native folders
-/ios
-/android
+# Note: ios and android are committed for Xcode Cloud / native builds
+# /ios
+# /android
