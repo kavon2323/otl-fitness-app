@@ -273,7 +273,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Simple resource copy - avoids sandbox issues with CocoaPods script\ninstall_resource() {\n  if [[ -d \"$1\" ]]; then\n    mkdir -p \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\n    rsync -av --exclude '.*' \"$1\" \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/\" || true\n  fi\n}\n\ninstall_resource \"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle\"\ninstall_resource \"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle\"\ninstall_resource \"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle\"\ninstall_resource \"${PODS_CONFIGURATION_BUILD_DIR}/RCT-Folly/RCT-Folly_privacy.bundle\"\ninstall_resource \"${PODS_CONFIGURATION_BUILD_DIR}/RNCAsyncStorage/RNCAsyncStorage_resources.bundle\"\ninstall_resource \"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle\"\ninstall_resource \"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle\"\ninstall_resource \"${PODS_CONFIGURATION_BUILD_DIR}/boost/boost_privacy.bundle\"\ninstall_resource \"${PODS_CONFIGURATION_BUILD_DIR}/glog/glog_privacy.bundle\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-otlfitnessapp/Pods-otlfitnessapp-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		C3E00383E929DCA325E9F1AB /* [CP] Embed Pods Frameworks */ = {
@@ -361,6 +361,10 @@
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.otlperformance.app;
 				PRODUCT_NAME = otlfitnessapp;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "otlfitnessapp/otlfitnessapp-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -392,6 +396,10 @@
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.otlperformance.app;
 				PRODUCT_NAME = otlfitnessapp;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "otlfitnessapp/otlfitnessapp-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
