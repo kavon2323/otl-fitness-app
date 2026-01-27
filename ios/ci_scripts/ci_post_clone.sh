@@ -6,7 +6,7 @@
 set -e
 
 echo "=== Installing Homebrew dependencies ==="
-brew install node coreutils
+brew install node
 
 echo "=== Node version ==="
 node --version
@@ -20,21 +20,38 @@ echo "=== Installing CocoaPods dependencies ==="
 cd "$CI_PRIMARY_REPOSITORY_PATH/ios"
 pod install
 
-echo "=== Patching realpath for BSD compatibility ==="
-# Replace GNU realpath with grealpath (from coreutils) in all Pods scripts
-# GNU realpath supports -m and -q flags that BSD realpath doesn't
-find "$CI_PRIMARY_REPOSITORY_PATH/ios/Pods" -name "*.sh" -type f | while read script; do
-  if grep -q "realpath" "$script" 2>/dev/null; then
-    echo "Patching: $script"
-    # Replace 'realpath' with 'grealpath' (GNU version from coreutils)
-    sed -i '' 's|/usr/bin/realpath|/usr/local/bin/grealpath|g' "$script"
-    sed -i '' 's|`realpath|`/usr/local/bin/grealpath|g' "$script"
-    sed -i '' 's|$(realpath|$(/usr/local/bin/grealpath|g' "$script"
-    # Also handle bare realpath at start of line or after space/semicolon
-    sed -i '' 's| realpath | /usr/local/bin/grealpath |g' "$script"
+echo "=== Replacing CocoaPods resources script with sandbox-compatible version ==="
+# The CocoaPods-generated script uses temp files and GNU realpath which fail in Xcode Cloud
+# Replace it with a simple script that just copies the bundles directly
+cat > "$CI_PRIMARY_REPOSITORY_PATH/ios/Pods/Target Support Files/Pods-otlfitnessapp/Pods-otlfitnessapp-resources.sh" << 'SCRIPT'
+#!/bin/sh
+set -e
+set -u
+set -o pipefail
+
+install_resource() {
+  if [ -d "$1" ]; then
+    echo "Installing $1"
+    mkdir -p "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
+    rsync -av --exclude '.*' "$1" "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/"
   fi
-done
-echo "Patching complete"
+}
+
+install_resource "${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle"
+install_resource "${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle"
+install_resource "${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle"
+install_resource "${PODS_CONFIGURATION_BUILD_DIR}/RCT-Folly/RCT-Folly_privacy.bundle"
+install_resource "${PODS_CONFIGURATION_BUILD_DIR}/RNCAsyncStorage/RNCAsyncStorage_resources.bundle"
+install_resource "${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle"
+install_resource "${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle"
+install_resource "${PODS_CONFIGURATION_BUILD_DIR}/boost/boost_privacy.bundle"
+install_resource "${PODS_CONFIGURATION_BUILD_DIR}/glog/glog_privacy.bundle"
+
+echo "Resources copied successfully"
+SCRIPT
+
+chmod +x "$CI_PRIMARY_REPOSITORY_PATH/ios/Pods/Target Support Files/Pods-otlfitnessapp/Pods-otlfitnessapp-resources.sh"
+echo "Replaced resources script"
 
 echo "=== Pre-bundling JavaScript for Release ==="
 cd "$CI_PRIMARY_REPOSITORY_PATH"
