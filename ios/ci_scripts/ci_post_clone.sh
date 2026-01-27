@@ -21,19 +21,17 @@ cd "$CI_PRIMARY_REPOSITORY_PATH/ios"
 pod install
 
 echo "=== Replacing CocoaPods resources script with sandbox-compatible version ==="
-# The CocoaPods-generated script uses temp files and GNU realpath which fail in Xcode Cloud
-# Replace it with a simple script that just copies the bundles directly
+# The CocoaPods-generated script uses temp files which fail in Xcode Cloud sandbox
+# Replace with a simple cp-based script
 cat > "$CI_PRIMARY_REPOSITORY_PATH/ios/Pods/Target Support Files/Pods-otlfitnessapp/Pods-otlfitnessapp-resources.sh" << 'SCRIPT'
 #!/bin/sh
 set -e
-set -u
-set -o pipefail
 
 install_resource() {
-  if [ -d "$1" ]; then
+  if [ -e "$1" ]; then
     echo "Installing $1"
     mkdir -p "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
-    rsync -av --exclude '.*' "$1" "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/"
+    cp -R "$1" "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/"
   fi
 }
 
