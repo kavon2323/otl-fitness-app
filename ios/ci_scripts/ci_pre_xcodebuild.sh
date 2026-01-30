@@ -97,10 +97,10 @@ install_framework()
     source="$(readlink "${source}")"
   fi
 
-  echo "ditto: Installing ${framework_name} to ${destination}"
+  echo "cp: Installing ${framework_name} to ${destination}"
 
-  # Use ditto instead of rsync - it's sandbox-friendly
-  ditto --noextattr --norsrc "${source}" "${destination}/${framework_name}"
+  # Use cp -R instead of ditto/rsync - more sandbox-friendly
+  cp -R "${source}" "${destination}/${framework_name}"
 
   # Remove unnecessary directories
   rm -rf "${destination}/${framework_name}/Headers" 2>/dev/null || true
