@@ -80,5 +80,16 @@ target 'otlfitnessapp' do
       File.write(script_path, script)
       puts "[Podfile] Patched #{script_path} for BSD realpath compatibility"
     end
+
+    # Fix Hermes framework installation script for Xcode Cloud sandbox
+    # The ditto command fails with "Operation not permitted" in sandbox
+    frameworks_script_path = "Pods/Target Support Files/Pods-otlfitnessapp/Pods-otlfitnessapp-frameworks.sh"
+    if File.exist?(frameworks_script_path)
+      script = File.read(frameworks_script_path)
+      # Replace ditto with cp -R which works in the sandbox
+      script = script.gsub(/\s+ditto\s+/, ' cp -R ')
+      File.write(frameworks_script_path, script)
+      puts "[Podfile] Patched #{frameworks_script_path} to use cp instead of ditto"
+    end
   end
 end

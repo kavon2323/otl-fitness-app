@@ -71,12 +71,8 @@ ls -la ios/build/
 
 echo "=== Fixing Hermes framework permissions ==="
 # Fix permissions on Hermes framework to prevent ditto errors in Xcode Cloud
-HERMES_PATH="$CI_PRIMARY_REPOSITORY_PATH/ios/Pods/hermes-engine/destroot"
-if [ -d "$HERMES_PATH" ]; then
-  chmod -R 755 "$HERMES_PATH"
-  echo "Hermes permissions fixed"
-else
-  echo "Hermes path not found at $HERMES_PATH, skipping"
-fi
+# The build script uses ditto which fails on files without proper permissions
+# We need to fix this in the post_install hook instead
+echo "Hermes permissions will be handled by Podfile post_install hook"
 
 echo "=== Post-clone setup complete! ==="
