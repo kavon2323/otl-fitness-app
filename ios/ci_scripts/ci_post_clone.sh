@@ -69,4 +69,14 @@ npx expo export:embed \
 echo "=== Bundle created at ios/build/main.jsbundle ==="
 ls -la ios/build/
 
+echo "=== Fixing Hermes framework permissions ==="
+# Fix permissions on Hermes framework to prevent ditto errors in Xcode Cloud
+HERMES_PATH="$CI_PRIMARY_REPOSITORY_PATH/ios/Pods/hermes-engine/destroot"
+if [ -d "$HERMES_PATH" ]; then
+  chmod -R 755 "$HERMES_PATH"
+  echo "Hermes permissions fixed"
+else
+  echo "Hermes path not found at $HERMES_PATH, skipping"
+fi
+
 echo "=== Post-clone setup complete! ==="
