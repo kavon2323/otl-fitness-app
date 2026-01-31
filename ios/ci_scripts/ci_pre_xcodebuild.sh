@@ -57,7 +57,12 @@ SCRIPT
   chmod +x "$RESOURCES_SCRIPT"
 fi
 
-# Replace frameworks script
+# Replace frameworks script - DISABLED: Let CocoaPods handle it
+# The sandbox restrictions make it impossible to copy to InstallationBuildProductsLocation
+# Xcode Cloud should handle framework embedding automatically
+echo "Skipping frameworks script replacement - using CocoaPods default"
+
+if false; then
 FRAMEWORKS_SCRIPT="$CI_PRIMARY_REPOSITORY_PATH/ios/Pods/Target Support Files/Pods-otlfitnessapp/Pods-otlfitnessapp-frameworks.sh"
 if [ -f "$FRAMEWORKS_SCRIPT" ]; then
   echo "Replacing frameworks script..."
@@ -180,6 +185,7 @@ fi
 echo "=== Frameworks embedded successfully ==="
 SCRIPT
   chmod +x "$FRAMEWORKS_SCRIPT"
+fi
 fi
 
 echo "=== Scripts replaced ==="
