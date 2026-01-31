@@ -79,7 +79,7 @@ function parseCSVLine(line) {
 
 // Read existing exercises to check for duplicates
 function getExistingExerciseIds() {
-  const exercisesPath = path.join(__dirname, 'otl-fitness-app/src/data/exercises.ts');
+  const exercisesPath = path.join(__dirname, 'src/data/exercises.ts');
   const content = fs.readFileSync(exercisesPath, 'utf-8');
 
   const ids = new Set();
@@ -131,6 +131,9 @@ async function main() {
 
       const id = toId(name);
 
+      // Normalize category to match TypeScript type (replace spaces with underscores)
+      const normalizedCategory = category.toLowerCase().replace(/ /g, '_');
+
       // Check for duplicates
       if (existingIds.has(id)) {
         duplicates.push(name);
@@ -162,7 +165,7 @@ async function main() {
       exercises.push({
         id,
         name,
-        category,
+        category: normalizedCategory,
         description,
         videoUrl: hasValidVideo ? videoUrl : undefined,
         tips: tipsArray.length > 0 ? tipsArray : undefined,
@@ -194,10 +197,11 @@ async function main() {
   // Group by category
   const byCategory = {};
   exercises.forEach(ex => {
-    if (!byCategory[ex.category]) {
-      byCategory[ex.category] = [];
+    const cat = ex.category;
+    if (!byCategory[cat]) {
+      byCategory[cat] = [];
     }
-    byCategory[ex.category].push(ex);
+    byCategory[cat].push(ex);
   });
 
   console.log('\nExercises by category:');
@@ -258,7 +262,7 @@ async function main() {
   ts += `];\n`;
 
   // Write output
-  const outputPath = path.join(__dirname, 'otl-fitness-app/src/data/exercises-enhanced.ts');
+  const outputPath = path.join(__dirname, 'src/data/exercises-enhanced.ts');
   fs.writeFileSync(outputPath, ts);
   console.log(`\nWrote ${outputPath}`);
   console.log(`File size: ${(ts.length / 1024).toFixed(2)} KB`);

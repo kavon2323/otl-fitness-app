@@ -10,10 +10,10 @@ import {
   WorkoutExercise,
   ExerciseSet,
 } from '../types';
-import { getAllExercises } from '../store/exerciseStore';
+import { exercisesStore } from '../data/exercisesStore';
 
-// Get exercises dynamically from store
-const getExercises = () => getAllExercises();
+// Get exercises dynamically from store (includes all Supabase exercises)
+const getExercises = () => exercisesStore.getAll();
 
 // Equipment options for multi-select
 export const EQUIPMENT_OPTIONS: EquipmentOption[] = [

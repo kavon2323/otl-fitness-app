@@ -149,20 +149,30 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
     const currentProfile = usePlayerProfileStore.getState().profile;
     const days = currentProfile?.trainingDaysPerWeek;
 
+    console.log('🔍 Profile confirmed - days:', days);
+    console.log('🔍 Current profile:', currentProfile);
+
     if (days) {
       const programs = getStrengthProgramsByDaysPerWeek(days);
+      console.log('🔍 Found programs for', days, 'days:', programs.length);
       const otlProgram = programs.find(p => p.id.startsWith('otl-'));
       const program = otlProgram || programs[0];
 
+      console.log('🔍 Selected program:', program?.id);
+
       if (program) {
+        // Set all state in one batch to avoid race conditions
+        // React will batch these updates together
         setSelectedProgram(program);
         setIsRecommendedProgram(true);
         setCurrentScreen('programOverview');
+        console.log('✅ Set screen to programOverview, program:', program.id);
         return;
       }
     }
 
     // Fallback to program selection if no recommended program found
+    console.log('⚠️ No program found, showing program select');
     setCurrentScreen('programSelect');
   };
 
@@ -271,12 +281,17 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
   ].includes(currentScreen);
 
   const renderScreen = () => {
+    console.log('🎬 Rendering screen:', currentScreen, '| selectedProgram:', selectedProgram?.id);
     switch (currentScreen) {
       case 'confirmProfile':
         return (
           <ConfirmProfileScreen
-            onGenerateProgram={handleProfileConfirmed}
+            onGenerateProgram={() => {
+              console.log('🔥 onGenerateProgram called');
+              handleProfileConfirmed();
+            }}
             onBack={() => {
+              console.log('🔙 Back from confirmProfile');
               setCurrentScreen('home');
               setActiveTab('home');
             }}
@@ -418,10 +433,12 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
 
       case 'programOverview':
         if (!selectedProgram) {
+          console.log('❌ ProgramOverview: No selectedProgram, redirecting to home');
           setCurrentScreen('home');
           setActiveTab('home');
           return null;
         }
+        console.log('✅ ProgramOverview: Rendering with program:', selectedProgram.id);
         return (
           <ProgramOverviewScreen
             program={selectedProgram}

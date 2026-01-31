@@ -6,10 +6,10 @@ import {
   ExerciseTag,
 } from '../data/exerciseTags';
 import { getExerciseById, defaultExercises, getAllExercises } from '../store/exerciseStore';
-
-// Get exercises from store
-const allExercises = getAllExercises();
 import { getExperienceLevelFromYears } from './modifierCalculator';
+
+// Get exercises from store dynamically (not at module load time)
+const getAllExercisesFromStore = () => getAllExercises();
 
 export interface ExerciseRecommendation {
   exerciseId: string;
@@ -71,6 +71,7 @@ const getExercisesForSlot = (categorySlot: string): Exercise[] => {
     return [];
   }
 
+  const allExercises = getAllExercisesFromStore();
   return allExercises.filter((ex) => categories.includes(ex.category));
 };
 

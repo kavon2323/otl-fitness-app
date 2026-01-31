@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { Exercise, ExerciseCategory } from '../types';
-import { exercises as localExercises, defaultExercises } from '../data/exercises';
+import { exercisesStore } from '../data/exercisesStore';
+import { defaultExercises } from '../data/exercises';
 
 interface CustomExerciseRow {
   id: string;
@@ -56,7 +57,7 @@ const mapCustomExercise = (row: CustomExerciseRow): Exercise => ({
 });
 
 export const useExerciseStore = create<ExerciseState>((set, get) => ({
-  exercises: localExercises,
+  exercises: exercisesStore.getAll(), // Get from Supabase-backed store
   customExercises: [],
   isLoading: false,
   isInitialized: false,
@@ -89,8 +90,8 @@ export const useExerciseStore = create<ExerciseState>((set, get) => ({
           isLoading: false,
           isInitialized: true,
           error: error.message,
-          // Keep local exercises even if fetch fails
-          exercises: localExercises,
+          // Keep base exercises even if fetch fails
+          exercises: exercisesStore.getAll(),
         });
         return;
       }
@@ -98,9 +99,10 @@ export const useExerciseStore = create<ExerciseState>((set, get) => ({
       // Map custom exercises to Exercise type
       const customExercises = (data || []).map(mapCustomExercise);
 
-      // Merge local and custom exercises
+      // Merge Supabase exercises and custom exercises
       // Custom exercises are added to the beginning so they appear first
-      const mergedExercises = [...customExercises, ...localExercises];
+      const baseExercises = exercisesStore.getAll();
+      const mergedExercises = [...customExercises, ...baseExercises];
 
       set({
         exercises: mergedExercises,
@@ -115,7 +117,7 @@ export const useExerciseStore = create<ExerciseState>((set, get) => ({
         isLoading: false,
         isInitialized: true,
         error: error instanceof Error ? error.message : 'Unknown error',
-        exercises: localExercises,
+        exercises: exercisesStore.getAll(),
       });
     }
   },

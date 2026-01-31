@@ -1,10 +1,12 @@
 import { Exercise, ExerciseCategory } from '../types';
+import { enhancedExercises } from './exercises-enhanced';
 
 // Helper to generate IDs from names
 const toId = (name: string): string =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 
-export const exercises: Exercise[] = [
+// Core exercises used by the workout generator (140 exercises)
+const coreExercises: Exercise[] = [
   // ==================== PREP EXERCISES ====================
   {
     id: toId('Alt Hamstring ISO Bridge'),
@@ -1992,6 +1994,9 @@ export const exercises: Exercise[] = [
     ],
   },
 ];
+
+// Combined exercise library: core exercises (140) + enhanced exercises (777) = 917 total
+export const exercises: Exercise[] = [...coreExercises, ...enhancedExercises];
 
 // Helper function to get exercises by category
 export const getExercisesByCategory = (category: ExerciseCategory): Exercise[] =>

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -10,25 +10,39 @@ import {
 } from '@expo-google-fonts/oswald';
 import * as SplashScreen from 'expo-splash-screen';
 import { RootNavigator } from './src/navigation';
-import { SplashVideo } from './src/components';
+import { SplashVideo } from './src/components/SplashVideo';
 import { colors } from './src/theme';
+import { exercisesStore } from './src/data/exercisesStore';
 
 // Keep splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
-  const [showSplashVideo, setShowSplashVideo] = useState(true);
   const [fontsLoaded] = useFonts({
     Oswald_400Regular,
     Oswald_500Medium,
     Oswald_700Bold,
   });
+  const [showSplashVideo, setShowSplashVideo] = useState(true);
+
+  // Load exercises in background
+  useEffect(() => {
+    exercisesStore.initialize().then(() => {
+      console.log('✅ Exercises ready');
+    }).catch(err => {
+      console.error('⚠️ Exercises load failed, using local data:', err);
+    });
+  }, []);
 
   const onLayoutRootView = useCallback(async () => {
     if (fontsLoaded) {
       await SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
+
+  const handleSplashFinish = useCallback(() => {
+    setShowSplashVideo(false);
+  }, []);
 
   if (!fontsLoaded) {
     return (
@@ -38,18 +52,12 @@ export default function App() {
     );
   }
 
-  // Show splash video after fonts are loaded
   if (showSplashVideo) {
-    return (
-      <View style={styles.splashContainer} onLayout={onLayoutRootView}>
-        <StatusBar style="light" />
-        <SplashVideo onFinish={() => setShowSplashVideo(false)} />
-      </View>
-    );
+    return <SplashVideo onFinish={handleSplashFinish} />;
   }
 
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider onLayout={onLayoutRootView}>
       <StatusBar style="light" />
       <RootNavigator />
     </SafeAreaProvider>
@@ -62,9 +70,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  splashContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
   },
 });
