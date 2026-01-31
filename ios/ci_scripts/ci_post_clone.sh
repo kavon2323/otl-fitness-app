@@ -69,10 +69,4 @@ npx expo export:embed \
 echo "=== Bundle created at ios/build/main.jsbundle ==="
 ls -la ios/build/
 
-echo "=== Fixing Hermes framework permissions ==="
-# Fix permissions on Hermes framework to prevent ditto errors in Xcode Cloud
-# The build script uses ditto which fails on files without proper permissions
-# We need to fix this in the post_install hook instead
-echo "Hermes permissions will be handled by Podfile post_install hook"
-
 echo "=== Post-clone setup complete! ==="
