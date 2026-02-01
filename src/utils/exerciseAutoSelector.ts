@@ -4,12 +4,18 @@ import {
   getExerciseTag,
   scoreExerciseForPlayer,
   ExerciseTag,
+  exerciseTags,
 } from '../data/exerciseTags';
 import { getExerciseById, defaultExercises, getAllExercises } from '../store/exerciseStore';
 import { getExperienceLevelFromYears } from './modifierCalculator';
 
 // Get exercises from store dynamically (not at module load time)
 const getAllExercisesFromStore = () => getAllExercises();
+
+// Get all exercise IDs that have tags (the core/default pool)
+const getTaggedExerciseIds = (): Set<string> => {
+  return new Set(exerciseTags.map(tag => tag.exerciseId));
+};
 
 export interface ExerciseRecommendation {
   exerciseId: string;
@@ -90,10 +96,55 @@ const slotToCategoryMap: Record<string, string[]> = {
   MOBILITY: ['prep', 'prehab'],
 };
 
-// Get exercises that match a category slot
+// Map slot names to selection pool IDs (lowercase with underscores)
+// This maps the categorySlot to the pool name used in the database
+const slotToPoolMap: Record<string, string> = {
+  PRIMARY_SQUAT: 'primary_squat',
+  ACCESSORY_SQUAT: 'accessory_squat',
+  PRIMARY_HINGE: 'primary_hinge',
+  SINGLE_LEG_HINGE: 'single_leg_hinge',
+  ACCESSORY_HINGE: 'accessory_hinge',
+  PRIMARY_LUNGE: 'primary_lunge',
+  LATERAL_LUNGE: 'lateral_lunge',
+  LUNGE: 'primary_lunge',
+  PRIMARY_PRESS: 'primary_press',
+  SECONDARY_PRESS: 'secondary_press',
+  VERTICAL_PRESS: 'vertical_press',
+  SINGLE_ARM_PRESS: 'single_arm_press',
+  HORIZONTAL_PRESS: 'horizontal_press',
+  ACCESSORY_PRESS: 'accessory_press',
+  ROTATIONAL_PRESS: 'rotational_press',
+  PRIMARY_PULL: 'primary_pull',
+  HORIZONTAL_PULL: 'horizontal_pull',
+  VERTICAL_PULL: 'vertical_pull',
+  SINGLE_ARM_VERTICAL_PULL: 'single_arm_pull',
+  ACCESSORY_PULL: 'accessory_pull',
+  CORE_VARIATION: 'core_variation',
+  ISO_HOLD: 'iso_hold',
+  STABILIZATION_CORE: 'stabilization_core',
+  WEIGHTED_CORE: 'weighted_core',
+  ENERGY_SYSTEM: 'energy_system',
+  SPRINT: 'sprint',
+  CONDITIONING: 'conditioning',
+  PLYOMETRIC: 'plyometric',
+  PLYO_JUMP: 'plyo_jump',
+  PLYO_PUSH: 'plyo_push',
+  WALKING_RDL: 'walking_rdl',
+  HIP_FLEXOR_PREP: 'hip_flexor_prep',
+  PREP: 'prep',
+  SPEED_PREP: 'speed_prep',
+  DYNAMIC_WARMUP: 'dynamic_warmup',
+  MOBILITY: 'mobility',
+};
+
+// Get exercises that match a category slot using combined pools:
+// 1. Tagged exercises (default pool) - exercises with tags that match the category
+// 2. Database pool exercises - exercises with selectionPools containing the pool name
 const getExercisesForSlot = (categorySlot: string): Exercise[] => {
   const categories = slotToCategoryMap[categorySlot];
-  if (!categories) {
+  const poolName = slotToPoolMap[categorySlot];
+
+  if (!categories && !poolName) {
     // Return default if no mapping
     const defaultId = defaultExercises[categorySlot];
     if (defaultId) {
@@ -104,7 +155,40 @@ const getExercisesForSlot = (categorySlot: string): Exercise[] => {
   }
 
   const allExercises = getAllExercisesFromStore();
-  return allExercises.filter((ex) => categories.includes(ex.category));
+  const taggedExerciseIds = getTaggedExerciseIds();
+  const matchingExercises: Exercise[] = [];
+  const addedIds = new Set<string>();
+
+  // First, add all tagged exercises that match the category (default pool)
+  if (categories) {
+    for (const exercise of allExercises) {
+      if (categories.includes(exercise.category) && taggedExerciseIds.has(exercise.id)) {
+        if (!addedIds.has(exercise.id)) {
+          matchingExercises.push(exercise);
+          addedIds.add(exercise.id);
+        }
+      }
+    }
+  }
+
+  // Then, add exercises that have this pool in their selectionPools (database pool)
+  if (poolName) {
+    for (const exercise of allExercises) {
+      if (exercise.selectionPools?.includes(poolName)) {
+        if (!addedIds.has(exercise.id)) {
+          matchingExercises.push(exercise);
+          addedIds.add(exercise.id);
+        }
+      }
+    }
+  }
+
+  // If no exercises found from pools, fall back to category-based selection
+  if (matchingExercises.length === 0 && categories) {
+    return allExercises.filter((ex) => categories.includes(ex.category));
+  }
+
+  return matchingExercises;
 };
 
 // Get the best exercise for a category slot based on player profile

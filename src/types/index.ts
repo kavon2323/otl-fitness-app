@@ -24,6 +24,7 @@ export interface Exercise {
     secondary?: string[];
   };
   equipment?: string[];
+  selectionPools?: string[]; // e.g., ['primary_squat', 'accessory_squat']
 }
 
 export interface ExerciseSet {

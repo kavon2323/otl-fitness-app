@@ -15,6 +15,7 @@ interface ExerciseRow {
   } | null;
   equipment: string[];
   is_core_exercise: boolean;
+  selection_pools: string[] | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -31,6 +32,7 @@ function rowToExercise(row: ExerciseRow): Exercise {
     tips: row.tips.length > 0 ? row.tips : undefined,
     musclesTargeted: row.muscles_targeted || undefined,
     equipment: row.equipment.length > 0 ? row.equipment : undefined,
+    selectionPools: row.selection_pools && row.selection_pools.length > 0 ? row.selection_pools : undefined,
   };
 }
 
