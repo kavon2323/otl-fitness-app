@@ -240,7 +240,7 @@ export const WorkoutGeneratorScreen: React.FC<WorkoutGeneratorScreenProps> = ({
 
       {/* Banner */}
       <Image
-        source={require('../../assets/omega_banner.jpg')}
+        source={require('../../assets/banner_white.png')}
         style={styles.banner}
         resizeMode="cover"
       />

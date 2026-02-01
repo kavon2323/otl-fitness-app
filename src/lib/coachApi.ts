@@ -213,13 +213,22 @@ export const fetchCoachPrograms = async (
     return [];
   }
 
+  // Create a default empty program structure for safety
+  const defaultProgramData: Program = {
+    id: '',
+    name: '',
+    description: '',
+    daysPerWeek: 0,
+    days: [],
+  };
+
   return (data || []).map((row) => ({
     id: row.id,
     coachId: row.coach_id,
     name: row.name,
     description: row.description,
-    daysPerWeek: row.days_per_week,
-    programData: row.program_data as Program,
+    daysPerWeek: row.days_per_week || 0,
+    programData: row.program_data ? (row.program_data as Program) : defaultProgramData,
     isTemplate: row.is_template,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -380,47 +389,76 @@ export const fetchProgramAssignments = async (
 export const fetchClientAssignments = async (
   clientId: string
 ): Promise<ProgramAssignment[]> => {
-  const { data, error } = await supabase
+  console.log('🔍 Fetching assignments for client:', clientId);
+
+  // First get the assignments
+  const { data: assignments, error } = await supabase
     .from('program_assignments')
-    .select(
-      `
-      *,
-      program:custom_programs (*)
-    `
-    )
+    .select('*')
     .eq('client_id', clientId)
     .in('status', ['assigned', 'active'])
     .order('assigned_at', { ascending: false });
 
-  if (error) {
+  console.log('📋 Assignments found:', assignments?.length, error);
+
+  if (error || !assignments?.length) {
     console.error('Error fetching client assignments:', error);
     return [];
   }
 
-  return (data || []).map((row) => ({
-    id: row.id,
-    programId: row.program_id,
-    clientId: row.client_id,
-    coachId: row.coach_id,
-    assignedAt: row.assigned_at,
-    startDate: row.start_date,
-    endDate: row.end_date,
-    status: row.status,
-    notes: row.notes,
-    program: row.program
-      ? {
-          id: row.program.id,
-          coachId: row.program.coach_id,
-          name: row.program.name,
-          description: row.program.description,
-          daysPerWeek: row.program.days_per_week,
-          programData: row.program.program_data as Program,
-          isTemplate: row.program.is_template,
-          createdAt: row.program.created_at,
-          updatedAt: row.program.updated_at,
-        }
-      : undefined,
-  }));
+  // Get unique program IDs
+  const programIds = [...new Set(assignments.map(a => a.program_id))];
+  console.log('📦 Program IDs to fetch:', programIds);
+
+  // Fetch programs separately (RLS might block join but allow direct access)
+  const { data: programs, error: programError } = await supabase
+    .from('custom_programs')
+    .select('*')
+    .in('id', programIds);
+
+  console.log('📦 Programs fetched:', programs?.length, programError);
+
+  // If RLS blocks custom_programs, try fetching with service role or different approach
+  // For now, log what we have
+  if (!programs?.length) {
+    console.log('⚠️ No programs returned - likely RLS policy issue on custom_programs table');
+    console.log('⚠️ The custom_programs table needs a SELECT policy allowing clients to read programs assigned to them');
+  }
+
+  // Create a map for quick lookup
+  const programMap = new Map(programs?.map(p => [p.id, p]) || []);
+
+  return assignments.map((row) => {
+    const program = programMap.get(row.program_id);
+    console.log(`📦 Assignment ${row.id} -> program:`, program?.name || 'NOT FOUND');
+
+    return {
+      id: row.id,
+      programId: row.program_id,
+      clientId: row.client_id,
+      coachId: row.coach_id,
+      assignedAt: row.assigned_at,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      status: row.status,
+      notes: row.notes,
+      program: program
+        ? {
+            id: program.id,
+            coachId: program.coach_id,
+            name: program.name,
+            description: program.description,
+            daysPerWeek: program.days_per_week || 0,
+            programData: program.program_data
+              ? (program.program_data as Program)
+              : { id: program.id, name: program.name, description: program.description || '', daysPerWeek: program.days_per_week || 0, days: [] },
+            isTemplate: program.is_template,
+            createdAt: program.created_at,
+            updatedAt: program.updated_at,
+          }
+        : undefined,
+    };
+  });
 };
 
 export const assignProgramToClients = async (

@@ -13,4 +13,5 @@ export { CoachingScreen } from './CoachingScreen';
 export { ResourcesScreen } from './ResourcesScreen';
 export { SettingsScreen } from './SettingsScreen';
 export { ConfirmProfileScreen } from './ConfirmProfileScreen';
+export { MessagesScreen } from './MessagesScreen';
 export * from './auth';

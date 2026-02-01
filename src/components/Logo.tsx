@@ -25,8 +25,8 @@ export const Logo: React.FC<LogoProps> = ({
 }) => {
   const dimensions = sizes[size];
 
-  // Use the logo image
-  const logoImage = require('../../assets/otl_logo_app.png');
+  // Use the logo image (white logo for dark backgrounds)
+  const logoImage = require('../../assets/logo_white.png');
 
   return (
     <View style={[styles.container, style]}>

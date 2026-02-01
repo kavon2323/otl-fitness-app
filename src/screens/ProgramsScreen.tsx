@@ -1,14 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
-import { allPrograms, getProgramsByType } from '../data/programs';
+import { Ionicons } from '@expo/vector-icons';
+import { getProgramsByType } from '../data/programs';
 import { useProgramStore } from '../store/programStore';
-import { Program, ProgramType } from '../types';
+import { useCoachStore } from '../store/coachStore';
+import { useAuthStore } from '../store/authStore';
+import { Program } from '../types';
 import { colors } from '../theme';
 
 interface ProgramsScreenProps {
@@ -21,13 +25,134 @@ export const ProgramsScreen: React.FC<ProgramsScreenProps> = ({
   onSelectProgram,
 }) => {
   const { currentProgramId, currentMobilityProgramId } = useProgramStore();
+  const { clientAssignments, loadClientAssignments, isLoadingAssignments } = useCoachStore();
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>('strength');
+
+  // Load assigned programs on mount
+  useEffect(() => {
+    if (user?.id) {
+      console.log('📥 Loading assigned programs for user:', user.id);
+      loadClientAssignments(user.id);
+    }
+  }, [user?.id, loadClientAssignments]);
 
   const strengthPrograms = useMemo(() => getProgramsByType('strength'), []);
   const mobilityPrograms = useMemo(() => getProgramsByType('mobility'), []);
 
+  // Convert assigned programs to Program format
+  const assignedPrograms = useMemo(() => {
+    console.log('📋 Client assignments count:', clientAssignments.length);
+
+    // Debug: log each assignment
+    clientAssignments.forEach((a, i) => {
+      console.log(`  Assignment ${i + 1}:`, {
+        id: a.id,
+        status: a.status,
+        programName: a.program?.name,
+        hasProgramData: !!a.program?.programData,
+        programDataDays: a.program?.programData?.days?.length || 0,
+      });
+    });
+
+    const validAssignments = clientAssignments
+      .filter(a => a.status === 'active' || a.status === 'assigned')
+      .filter(a => {
+        // Check if program exists and has valid programData
+        if (!a.program) {
+          console.log('  ⚠️ Assignment missing program:', a.id);
+          return false;
+        }
+        if (!a.program.programData) {
+          console.log('  ⚠️ Assignment program missing programData:', a.program.name);
+          return false;
+        }
+        return true;
+      })
+      .map(a => a.program!.programData);
+
+    console.log('✅ Valid assigned programs:', validAssignments.length);
+    return validAssignments;
+  }, [clientAssignments]);
+
   const displayedPrograms = activeTab === 'strength' ? strengthPrograms : mobilityPrograms;
   const currentId = activeTab === 'strength' ? currentProgramId : currentMobilityProgramId;
+
+  const renderProgramCard = (program: Program, isAssigned: boolean = false) => {
+    const isCurrentProgram = program.id === currentId;
+    const totalExercises = program.days.reduce(
+      (acc, day) =>
+        acc +
+        day.sections.reduce((sAcc, section) => sAcc + section.exercises.length, 0),
+      0
+    );
+
+    return (
+      <TouchableOpacity
+        key={program.id}
+        style={[
+          styles.programCard,
+          isCurrentProgram && styles.programCardActive,
+          isAssigned && styles.programCardAssigned,
+        ]}
+        onPress={() => onSelectProgram(program)}
+      >
+        {isAssigned && (
+          <View style={styles.assignedBadge}>
+            <Ionicons name="star" size={14} color="#000" />
+            <Text style={styles.assignedBadgeText}>FROM YOUR COACH</Text>
+          </View>
+        )}
+        {isCurrentProgram && (
+          <View style={styles.currentBadge}>
+            <Text style={styles.currentBadgeText}>CURRENT</Text>
+          </View>
+        )}
+        <Text style={styles.programName}>{program.name}</Text>
+        <Text style={styles.programDescription}>{program.description}</Text>
+        <View style={styles.programStats}>
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{program.daysPerWeek}</Text>
+            <Text style={styles.statLabel}>days/week</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{program.days.length}</Text>
+            <Text style={styles.statLabel}>
+              {activeTab === 'mobility' ? 'routines' : 'workouts'}
+            </Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{totalExercises}</Text>
+            <Text style={styles.statLabel}>
+              {activeTab === 'mobility' ? 'movements' : 'exercises'}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.daysPreview}>
+          {program.days.slice(0, 4).map((day) => (
+            <View key={day.id} style={styles.dayPreview}>
+              <Text style={styles.dayPreviewName}>Day {day.dayNumber}</Text>
+              <Text style={styles.dayPreviewFocus} numberOfLines={1}>
+                {day.focus || day.name}
+              </Text>
+            </View>
+          ))}
+          {program.days.length > 4 && (
+            <Text style={styles.moreDays}>
+              +{program.days.length - 4} more days
+            </Text>
+          )}
+        </View>
+        <View style={styles.viewDetails}>
+          <Text style={styles.viewDetailsText}>
+            {isCurrentProgram ? 'View Details' : 'View Program'} →
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -45,7 +170,7 @@ export const ProgramsScreen: React.FC<ProgramsScreenProps> = ({
           <Text style={[styles.tabText, activeTab === 'strength' && styles.tabTextActive]}>
             Strength
           </Text>
-          {currentProgramId && (
+          {(currentProgramId || assignedPrograms.length > 0) && (
             <View style={styles.tabDot} />
           )}
         </TouchableOpacity>
@@ -63,6 +188,25 @@ export const ProgramsScreen: React.FC<ProgramsScreenProps> = ({
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Assigned Programs Section */}
+        {activeTab === 'strength' && (
+          <>
+            {isLoadingAssignments && assignedPrograms.length === 0 && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.loadingText}>Loading assigned programs...</Text>
+              </View>
+            )}
+
+            {assignedPrograms.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Assigned by Your Coach</Text>
+                {assignedPrograms.map((program) => renderProgramCard(program, true))}
+              </>
+            )}
+          </>
+        )}
+
         <Text style={styles.sectionTitle}>
           {activeTab === 'strength' ? 'Strength & Conditioning' : 'Mobility & Recovery'}
         </Text>
@@ -74,74 +218,7 @@ export const ProgramsScreen: React.FC<ProgramsScreenProps> = ({
             </Text>
           </View>
         ) : (
-          displayedPrograms.map((program) => {
-            const isCurrentProgram = program.id === currentId;
-            const totalExercises = program.days.reduce(
-              (acc, day) =>
-                acc +
-                day.sections.reduce((sAcc, section) => sAcc + section.exercises.length, 0),
-              0
-            );
-
-            return (
-              <TouchableOpacity
-                key={program.id}
-                style={[
-                  styles.programCard,
-                  isCurrentProgram && styles.programCardActive,
-                ]}
-                onPress={() => onSelectProgram(program)}
-              >
-                {isCurrentProgram && (
-                  <View style={styles.currentBadge}>
-                    <Text style={styles.currentBadgeText}>CURRENT</Text>
-                  </View>
-                )}
-                <Text style={styles.programName}>{program.name}</Text>
-                <Text style={styles.programDescription}>{program.description}</Text>
-                <View style={styles.programStats}>
-                  <View style={styles.stat}>
-                    <Text style={styles.statValue}>{program.daysPerWeek}</Text>
-                    <Text style={styles.statLabel}>days/week</Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.stat}>
-                    <Text style={styles.statValue}>{program.days.length}</Text>
-                    <Text style={styles.statLabel}>
-                      {activeTab === 'mobility' ? 'routines' : 'workouts'}
-                    </Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.stat}>
-                    <Text style={styles.statValue}>{totalExercises}</Text>
-                    <Text style={styles.statLabel}>
-                      {activeTab === 'mobility' ? 'movements' : 'exercises'}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.daysPreview}>
-                  {program.days.slice(0, 4).map((day) => (
-                    <View key={day.id} style={styles.dayPreview}>
-                      <Text style={styles.dayPreviewName}>Day {day.dayNumber}</Text>
-                      <Text style={styles.dayPreviewFocus} numberOfLines={1}>
-                        {day.focus || day.name}
-                      </Text>
-                    </View>
-                  ))}
-                  {program.days.length > 4 && (
-                    <Text style={styles.moreDays}>
-                      +{program.days.length - 4} more days
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.viewDetails}>
-                  <Text style={styles.viewDetailsText}>
-                    {isCurrentProgram ? 'View Details' : 'View Program'} →
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })
+          displayedPrograms.map((program) => renderProgramCard(program, false))
         )}
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -216,8 +293,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#888',
     marginBottom: 16,
+    marginTop: 8,
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    gap: 10,
+  },
+  loadingText: {
+    color: '#888',
+    fontSize: 14,
   },
   emptyState: {
     backgroundColor: '#2a2a2a',
@@ -241,6 +330,28 @@ const styles = StyleSheet.create({
   },
   programCardActive: {
     borderColor: colors.primary,
+  },
+  programCardAssigned: {
+    borderColor: colors.primary,
+    borderWidth: 2,
+    backgroundColor: 'rgba(231, 167, 0, 0.08)',
+  },
+  assignedBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  assignedBadgeText: {
+    color: '#000',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   currentBadge: {
     backgroundColor: colors.primary,

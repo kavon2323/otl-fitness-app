@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import { useAuthStore } from '../store/authStore';
 import { useProgramStore } from '../store/programStore';
 import { useWorkoutStore } from '../store/workoutStore';
 import { usePlayerProfileStore } from '../store/playerProfileStore';
+import { useMessageStore } from '../store/messageStore';
 import { Program, WorkoutDay, ProgramType } from '../types';
 import { Logo } from '../components';
 import { colors, typography, spacing, borderRadius } from '../theme';
@@ -22,6 +23,7 @@ interface HomeScreenProps {
   onSelectDay: (day: WorkoutDay) => void;
   onEditExercises: () => void;
   onOpenSettings?: () => void;
+  onOpenMessages?: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -29,14 +31,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onSelectDay,
   onEditExercises,
   onOpenSettings,
+  onOpenMessages,
 }) => {
   const { user, signOut } = useAuthStore();
   const { getCurrentProgram, currentWeek, currentMobilityWeek, setCurrentWeek, resetProgram } = useProgramStore();
   const { isWorkoutCompletedThisWeek } = useWorkoutStore();
   const { profile, clearProfile } = usePlayerProfileStore();
+  const { unreadCount, loadUnreadCount } = useMessageStore();
 
   const currentProgram = getCurrentProgram('strength');
   const currentMobilityProgram = getCurrentProgram('mobility');
+
+  // Load unread message count on mount
+  useEffect(() => {
+    if (user?.id) {
+      loadUnreadCount(user.id);
+    }
+  }, [user?.id]);
 
   // DEV: Reset player profile to test onboarding
   const handleResetProfile = async () => {
@@ -69,7 +80,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <View style={styles.headerCenter}>
             <Logo size="small" />
           </View>
-          <View style={styles.headerRight} />
+          <TouchableOpacity style={styles.headerRight} onPress={onOpenMessages}>
+            <View style={styles.notificationButton}>
+              <Ionicons
+                name={unreadCount > 0 ? 'notifications' : 'notifications-outline'}
+                size={24}
+                color={unreadCount > 0 ? colors.primary : colors.textSecondary}
+              />
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.emptyState}>
@@ -100,7 +126,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <View style={styles.headerCenter}>
           <Logo size="small" />
         </View>
-        <View style={styles.headerRight} />
+        <TouchableOpacity style={styles.headerRight} onPress={onOpenMessages}>
+          <View style={styles.notificationButton}>
+            <Ionicons
+              name={unreadCount > 0 ? 'notifications' : 'notifications-outline'}
+              size={24}
+              color={unreadCount > 0 ? colors.primary : colors.textSecondary}
+            />
+            {unreadCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -312,6 +353,29 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationButton: {
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#ff4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
   },
   profileButton: {
     width: 40,

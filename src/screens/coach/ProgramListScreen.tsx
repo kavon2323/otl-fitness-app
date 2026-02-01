@@ -93,67 +93,70 @@ export const ProgramListScreen: React.FC<ProgramListScreenProps> = ({
             </TouchableOpacity>
           </View>
         ) : (
-          programs.map((program) => (
-            <View key={program.id} style={styles.programCard}>
-              <TouchableOpacity
-                style={styles.programContent}
-                onPress={() => handleEditProgram(program)}
-              >
-                <Text style={styles.programName}>{program.name}</Text>
-                {program.description && (
-                  <Text style={styles.programDescription} numberOfLines={2}>
-                    {program.description}
-                  </Text>
-                )}
-                <View style={styles.programStats}>
-                  <View style={styles.stat}>
-                    <Text style={styles.statValue}>{program.daysPerWeek}</Text>
-                    <Text style={styles.statLabel}>days/week</Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.stat}>
-                    <Text style={styles.statValue}>
-                      {program.programData.days.length}
-                    </Text>
-                    <Text style={styles.statLabel}>workouts</Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.stat}>
-                    <Text style={styles.statValue}>
-                      {program.programData.days.reduce(
-                        (acc, day) =>
-                          acc +
-                          day.sections.reduce(
-                            (sAcc, section) => sAcc + section.exercises.length,
-                            0
-                          ),
-                        0
-                      )}
-                    </Text>
-                    <Text style={styles.statLabel}>exercises</Text>
-                  </View>
-                </View>
-                <Text style={styles.programDate}>
-                  Created {new Date(program.createdAt).toLocaleDateString()}
-                </Text>
-              </TouchableOpacity>
+          programs.map((program) => {
+            // Safely access programData with fallbacks
+            const days = program.programData?.days || [];
+            const workoutCount = days.length;
+            const exerciseCount = days.reduce(
+              (acc, day) =>
+                acc +
+                (day.sections || []).reduce(
+                  (sAcc, section) => sAcc + (section.exercises || []).length,
+                  0
+                ),
+              0
+            );
 
-              <View style={styles.programActions}>
+            return (
+              <View key={program.id} style={styles.programCard}>
                 <TouchableOpacity
-                  style={styles.actionButton}
+                  style={styles.programContent}
                   onPress={() => handleEditProgram(program)}
                 >
-                  <Text style={styles.actionButtonText}>Edit</Text>
+                  <Text style={styles.programName}>{program.name}</Text>
+                  {program.description && (
+                    <Text style={styles.programDescription} numberOfLines={2}>
+                      {program.description}
+                    </Text>
+                  )}
+                  <View style={styles.programStats}>
+                    <View style={styles.stat}>
+                      <Text style={styles.statValue}>{program.daysPerWeek || 0}</Text>
+                      <Text style={styles.statLabel}>days/week</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.stat}>
+                      <Text style={styles.statValue}>{workoutCount}</Text>
+                      <Text style={styles.statLabel}>workouts</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.stat}>
+                      <Text style={styles.statValue}>{exerciseCount}</Text>
+                      <Text style={styles.statLabel}>exercises</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.programDate}>
+                    Created {new Date(program.createdAt).toLocaleDateString()}
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.deleteButton]}
-                  onPress={() => handleDeleteProgram(program)}
-                >
-                  <Text style={styles.deleteButtonText}>Delete</Text>
-                </TouchableOpacity>
+
+                <View style={styles.programActions}>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => handleEditProgram(program)}
+                  >
+                    <Text style={styles.actionButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.deleteButton]}
+                    onPress={() => handleDeleteProgram(program)}
+                  >
+                    <Text style={styles.deleteButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          ))
+            );
+          })
         )}
         <View style={styles.bottomPadding} />
       </ScrollView>

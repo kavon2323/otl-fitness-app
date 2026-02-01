@@ -18,6 +18,38 @@ export interface ExerciseRecommendation {
   reasons: string[];
 }
 
+// Slots that are considered "strength" sections - these should NOT include TRX, prep, or prehab exercises
+const STRENGTH_SLOTS = new Set([
+  'PRIMARY_SQUAT', 'ACCESSORY_SQUAT',
+  'PRIMARY_HINGE', 'SINGLE_LEG_HINGE', 'ACCESSORY_HINGE',
+  'PRIMARY_LUNGE', 'LATERAL_LUNGE', 'LUNGE',
+  'PRIMARY_PRESS', 'SECONDARY_PRESS', 'VERTICAL_PRESS', 'SINGLE_ARM_PRESS',
+  'HORIZONTAL_PRESS', 'ACCESSORY_PRESS', 'ROTATIONAL_PRESS',
+  'PRIMARY_PULL', 'HORIZONTAL_PULL', 'VERTICAL_PULL',
+  'SINGLE_ARM_VERTICAL_PULL', 'ACCESSORY_PULL',
+  'CORE_VARIATION', 'ISO_HOLD', 'STABILIZATION_CORE', 'WEIGHTED_CORE',
+]);
+
+// Check if an exercise should be excluded from strength sections
+const shouldExcludeFromStrength = (exercise: Exercise, categorySlot: string): boolean => {
+  // Only apply filtering to strength slots
+  if (!STRENGTH_SLOTS.has(categorySlot)) {
+    return false;
+  }
+
+  // Exclude TRX exercises from strength sections
+  if (exercise.equipment?.includes('TRX Straps')) {
+    return true;
+  }
+
+  // Exclude prep and prehab categories from strength sections
+  if (exercise.category === 'prep' || exercise.category === 'prehab') {
+    return true;
+  }
+
+  return false;
+};
+
 // Map category slots to exercise categories for finding alternatives
 const slotToCategoryMap: Record<string, string[]> = {
   PRIMARY_SQUAT: ['squat'],
@@ -105,6 +137,7 @@ export const selectExerciseForSlot = (
 
   const scored = exercises
     .filter((ex) => !excludeIds.includes(ex.id))
+    .filter((ex) => !shouldExcludeFromStrength(ex, categorySlot))
     .map((exercise) => {
       const tag = getExerciseTag(exercise.id);
       if (!tag) {
@@ -166,6 +199,7 @@ export const getAlternativesForSlot = (
 
   const scored = exercises
     .filter((ex) => ex.id !== currentExerciseId)
+    .filter((ex) => !shouldExcludeFromStrength(ex, categorySlot))
     .map((exercise) => {
       const tag = getExerciseTag(exercise.id);
       if (!tag || tag.complexityLevel > maxComplexity) {

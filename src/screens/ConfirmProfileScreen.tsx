@@ -54,17 +54,16 @@ export const ConfirmProfileScreen: React.FC<ConfirmProfileScreenProps> = ({
   const handleGenerateProgram = async () => {
     setIsGenerating(true);
 
-    // Start a new training cycle (sets programStartDate to today)
-    const result = await startNewProgramCycle();
-
-    if (result.error) {
-      Alert.alert('Error', result.error);
-      setIsGenerating(false);
-      return;
-    }
-
-    // Navigate to program overview
+    // Navigate to program overview FIRST, before updating profile
+    // This prevents the component from being unmounted during the profile update
     onGenerateProgram();
+
+    // Start a new training cycle (sets programStartDate to today) - fire and forget
+    startNewProgramCycle().then((result) => {
+      if (result.error) {
+        console.error('Error starting program cycle:', result.error);
+      }
+    });
   };
 
   const handleUpdatePosition = async (position: PaintballPosition) => {

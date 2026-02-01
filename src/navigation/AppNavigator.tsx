@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { colors } from '../theme';
 import {
   HomeScreen,
   ProgramSelectScreen,
@@ -16,10 +17,11 @@ import {
   ResourcesScreen,
   SettingsScreen,
   ConfirmProfileScreen,
+  MessagesScreen,
 } from '../screens';
 import { BottomTabBar, TabName } from '../components';
 import { Program, WorkoutDay, Exercise, WorkoutLog } from '../types';
-import { useProgramStore } from '../store/programStore';
+import { useProgramStore, getWorkoutWithSelections } from '../store/programStore';
 import { useWorkoutStore } from '../store/workoutStore';
 import { usePlayerProfileStore } from '../store/playerProfileStore';
 import { getExerciseById } from '../store/exerciseStore';
@@ -42,7 +44,8 @@ type Screen =
   | 'workoutLogs'
   | 'coaching'
   | 'resources'
-  | 'settings';
+  | 'settings'
+  | 'messages';
 
 interface AppNavigatorProps {
   initialScreen?: 'home' | 'programOverview';
@@ -54,7 +57,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
   showRecommendedProgram = false,
 }) => {
   const { profile } = usePlayerProfileStore();
-  const { getCurrentProgram, currentProgramId, currentWeek } = useProgramStore();
+  const { getCurrentProgram, currentProgramId, currentWeek, getExerciseForSlot } = useProgramStore();
 
   // Get recommended program based on profile - prioritize OTL programs
   const recommendedProgram = useMemo(() => {
@@ -66,6 +69,11 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
   }, [profile?.trainingDaysPerWeek]);
 
   const [currentScreen, setCurrentScreen] = useState<Screen>(initialScreen);
+
+  // Debug: Log whenever currentScreen changes
+  useEffect(() => {
+    console.log('📍 currentScreen changed to:', currentScreen);
+  }, [currentScreen]);
   const [activeTab, setActiveTab] = useState<TabName>('home');
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(
     showRecommendedProgram ? recommendedProgram : null
@@ -87,10 +95,34 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
   const { activeWorkout } = useWorkoutStore();
 
   // Assemble workout based on player profile (position, side bias, phase, experience)
+  // Also apply exercise selections from programStore
   const assembledWorkout: AssembledWorkout | null = useMemo(() => {
     if (!selectedDay || !profile) return null;
-    return assembleWorkoutForPlayer(selectedDay, profile);
-  }, [selectedDay, profile]);
+    const assembled = assembleWorkoutForPlayer(selectedDay, profile);
+
+    // Get current program to look up exercise selections
+    const program = getCurrentProgram();
+    if (!program) return assembled;
+
+    // Apply exercise selections to each exercise in the workout
+    const sectionsWithSelections = assembled.sections.map((section) => ({
+      ...section,
+      exercises: section.exercises.map((exercise) => ({
+        ...exercise,
+        exerciseId: getExerciseForSlot(
+          program.id,
+          selectedDay.dayNumber,
+          exercise.exerciseSlot,
+          exercise.categorySlot
+        ) || exercise.exerciseId,
+      })),
+    }));
+
+    return {
+      ...assembled,
+      sections: sectionsWithSelections,
+    };
+  }, [selectedDay, profile, getCurrentProgram, getExerciseForSlot]);
 
   // Generate Why message for the assembled workout
   const whyMessage: WhyMessage | null = useMemo(() => {
@@ -161,12 +193,11 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
       console.log('🔍 Selected program:', program?.id);
 
       if (program) {
-        // Set all state in one batch to avoid race conditions
-        // React will batch these updates together
+        // Set all state at once and navigate directly
         setSelectedProgram(program);
         setIsRecommendedProgram(true);
         setCurrentScreen('programOverview');
-        console.log('✅ Set screen to programOverview, program:', program.id);
+        console.log('✅ Set program and navigated to programOverview:', program.id);
         return;
       }
     }
@@ -175,6 +206,14 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
     console.log('⚠️ No program found, showing program select');
     setCurrentScreen('programSelect');
   };
+
+  // This useEffect is no longer needed since we navigate directly in handleProfileConfirmed
+  // Keeping it commented out for reference
+  // useEffect(() => {
+  //   if (selectedProgram && isRecommendedProgram && currentScreen === 'confirmProfile') {
+  //     setCurrentScreen('programOverview');
+  //   }
+  // }, [selectedProgram, isRecommendedProgram, currentScreen]);
 
   const handleProgramSelected = (program: Program) => {
     setSelectedProgram(program);
@@ -311,9 +350,11 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
 
       case 'exerciseSelection':
         if (!selectedProgram) {
-          setCurrentScreen('home');
-          setActiveTab('home');
-          return null;
+          return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a1a' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          );
         }
         return (
           <ExerciseSelectionScreen
@@ -332,15 +373,19 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
 
       case 'workoutDay':
         if (!selectedDay) {
-          setCurrentScreen('home');
-          setActiveTab('home');
-          return null;
+          return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a1a' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          );
         }
         const programForDay = getCurrentProgram();
         if (!programForDay) {
-          setCurrentScreen('home');
-          setActiveTab('home');
-          return null;
+          return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a1a' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          );
         }
         // Use assembled workout if profile exists, otherwise use raw day
         const dayToDisplay = assembledWorkout || selectedDay;
@@ -362,15 +407,19 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
 
       case 'activeWorkout':
         if (!selectedDay) {
-          setCurrentScreen('home');
-          setActiveTab('home');
-          return null;
+          return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a1a' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          );
         }
         const programForWorkout = getCurrentProgram();
         if (!programForWorkout) {
-          setCurrentScreen('home');
-          setActiveTab('home');
-          return null;
+          return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a1a' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          );
         }
         // Use assembled workout if profile exists, otherwise use raw day
         const workoutToRun = assembledWorkout || selectedDay;
@@ -387,9 +436,11 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
 
       case 'workoutSummary':
         if (!completedWorkout) {
-          setCurrentScreen('home');
-          setActiveTab('home');
-          return null;
+          return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a1a' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          );
         }
         return (
           <WorkoutSummaryScreen
@@ -400,8 +451,11 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
 
       case 'exerciseDetail':
         if (!selectedExercise) {
-          setCurrentScreen(previousScreen);
-          return null;
+          return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a1a' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          );
         }
         return (
           <ExerciseDetailScreen
@@ -433,10 +487,12 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
 
       case 'programOverview':
         if (!selectedProgram) {
-          console.log('❌ ProgramOverview: No selectedProgram, redirecting to home');
-          setCurrentScreen('home');
-          setActiveTab('home');
-          return null;
+          console.log('❌ ProgramOverview: No selectedProgram, showing loading');
+          return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a1a' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          );
         }
         console.log('✅ ProgramOverview: Rendering with program:', selectedProgram.id);
         return (
@@ -490,6 +546,16 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
           />
         );
 
+      case 'messages':
+        return (
+          <MessagesScreen
+            onBack={() => {
+              setCurrentScreen('home');
+              setActiveTab('home');
+            }}
+          />
+        );
+
       case 'home':
       default:
         return (
@@ -498,6 +564,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
             onSelectDay={handleSelectDay}
             onEditExercises={handleEditExercises}
             onOpenSettings={() => setCurrentScreen('settings')}
+            onOpenMessages={() => setCurrentScreen('messages')}
           />
         );
     }

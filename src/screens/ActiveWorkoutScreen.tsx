@@ -8,6 +8,9 @@ import {
   Modal,
   Vibration,
   Switch,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import { WorkoutDay, WorkoutExercise, LoggedSet } from '../types';
 import { useWorkoutStore } from '../store/workoutStore';
@@ -207,16 +210,9 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
 
   // Calculate default rest time based on exercise type
   const getDefaultRestTime = useCallback((): number => {
-    if (!currentExercise) return 90;
-    const targetReps = currentExercise.sets[0]?.targetReps || '';
-    if (targetReps.includes('RM') || targetReps.includes('4') || targetReps.includes('5')) {
-      return 180; // 3 min for heavy sets
-    }
-    if (targetReps.includes('8') || targetReps.includes('10')) {
-      return 90; // 1.5 min for moderate sets
-    }
-    return 60; // 1 min for higher rep/accessory work
-  }, [currentExercise]);
+    // Default rest time is 90 seconds (1:30)
+    return 90;
+  }, []);
 
   // Check if this is a timed set (seconds, min, cal)
   const isTimedSet = currentSet?.targetReps
@@ -379,10 +375,10 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
     }
   };
 
-  // Add time to rest
-  const addRestTime = (seconds: number) => {
-    setRestTimeRemaining((prev) => prev + seconds);
-    setRestTotalTime((prev) => prev + seconds);
+  // Adjust rest time (add or subtract)
+  const adjustRestTime = (seconds: number) => {
+    setRestTimeRemaining((prev) => Math.max(0, prev + seconds));
+    setRestTotalTime((prev) => Math.max(0, prev + seconds));
   };
 
   // Handle rest timer complete
@@ -553,16 +549,16 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
           <View style={styles.restControls}>
             <TouchableOpacity
               style={styles.restButton}
-              onPress={() => addRestTime(15)}
+              onPress={() => adjustRestTime(-30)}
             >
-              <Text style={styles.restButtonText}>+15s</Text>
+              <Text style={styles.restButtonText}>-30s</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.restButton}
-              onPress={() => addRestTime(30)}
+              onPress={() => adjustRestTime(-15)}
             >
-              <Text style={styles.restButtonText}>+30s</Text>
+              <Text style={styles.restButtonText}>-15s</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -572,6 +568,20 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
               <Text style={styles.restButtonPrimaryText}>
                 {isPaused ? 'Resume' : 'Pause'}
               </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.restButton}
+              onPress={() => adjustRestTime(15)}
+            >
+              <Text style={styles.restButtonText}>+15s</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.restButton}
+              onPress={() => adjustRestTime(30)}
+            >
+              <Text style={styles.restButtonText}>+30s</Text>
             </TouchableOpacity>
           </View>
 
@@ -621,7 +631,11 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
 
   // Main Exercise Logging Screen
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => setShowCancelConfirm(true)}>
@@ -641,8 +655,13 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
         {progress.completed} / {progress.total} sets
       </Text>
 
-      {/* Current Exercise */}
-      <View style={styles.exerciseContainer}>
+      {/* Current Exercise - Scrollable */}
+      <ScrollView
+        style={styles.exerciseContainer}
+        contentContainerStyle={styles.exerciseContainerContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.sectionBadge}>
           <Text style={styles.sectionBadgeText}>{currentFlatExercise.sectionName}</Text>
         </View>
@@ -726,7 +745,7 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
         {currentExercise.notes && (
           <Text style={styles.exerciseNotes}>{currentExercise.notes}</Text>
         )}
-      </View>
+      </ScrollView>
 
       {/* Cancel Modal */}
       <Modal
@@ -794,7 +813,7 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
           </View>
         </View>
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -844,6 +863,9 @@ const styles = StyleSheet.create({
   exerciseContainer: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  exerciseContainerContent: {
+    paddingBottom: 40,
   },
   sectionBadge: {
     backgroundColor: '#333',

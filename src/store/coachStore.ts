@@ -313,12 +313,16 @@ export const useCoachStore = create<CoachState>((set, get) => ({
   },
 
   editProgram: (program: CustomProgram) => {
+    // Safely access programData with fallback to empty structure
+    const programData = program.programData || { days: [] };
+    const days = programData.days || [];
+
     set({
       programBuilder: {
         name: program.name,
         description: program.description || '',
-        daysPerWeek: program.daysPerWeek,
-        days: program.programData.days,
+        daysPerWeek: program.daysPerWeek || days.length,
+        days: days.length > 0 ? days : Array.from({ length: program.daysPerWeek || 3 }, (_, i) => createEmptyDay(i + 1)),
         currentDayIndex: 0,
       },
       isEditingProgram: program.id,

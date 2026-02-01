@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { RootNavigator } from './src/navigation';
 import { SplashVideo } from './src/components/SplashVideo';
+import { useAuthStore } from './src/store/authStore';
 import { colors } from './src/theme';
 import { exercisesStore } from './src/data/exercisesStore';
 
@@ -18,12 +19,19 @@ import { exercisesStore } from './src/data/exercisesStore';
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
+  const [videoFinished, setVideoFinished] = useState(false);
+  const [nativeSplashHidden, setNativeSplashHidden] = useState(false);
+  const { isInitialized, initialize } = useAuthStore();
   const [fontsLoaded] = useFonts({
     Oswald_400Regular,
     Oswald_500Medium,
     Oswald_700Bold,
   });
-  const [showSplashVideo, setShowSplashVideo] = useState(true);
+
+  // Initialize auth early so it's ready when video ends
+  useEffect(() => {
+    initialize();
+  }, []);
 
   // Load exercises in background
   useEffect(() => {
@@ -34,15 +42,15 @@ export default function App() {
     });
   }, []);
 
-  const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded) {
-      await SplashScreen.hideAsync();
+  // Hide native splash screen once fonts are loaded so video can be seen
+  useEffect(() => {
+    if (fontsLoaded && !nativeSplashHidden) {
+      SplashScreen.hideAsync().then(() => {
+        console.log('🎬 Native splash hidden, showing video');
+        setNativeSplashHidden(true);
+      });
     }
-  }, [fontsLoaded]);
-
-  const handleSplashFinish = useCallback(() => {
-    setShowSplashVideo(false);
-  }, []);
+  }, [fontsLoaded, nativeSplashHidden]);
 
   if (!fontsLoaded) {
     return (
@@ -52,14 +60,25 @@ export default function App() {
     );
   }
 
-  if (showSplashVideo) {
-    return <SplashVideo onFinish={handleSplashFinish} />;
+  // Keep video playing until BOTH video finishes AND auth is ready
+  // Video continues to show on screen even after it finishes if auth isn't ready
+  const showSplash = !videoFinished || !isInitialized;
+
+  if (showSplash) {
+    return (
+      <View style={styles.splashContainer}>
+        <StatusBar style="light" />
+        <SplashVideo onFinish={() => setVideoFinished(true)} />
+      </View>
+    );
   }
 
   return (
-    <SafeAreaProvider onLayout={onLayoutRootView}>
-      <StatusBar style="light" />
-      <RootNavigator />
+    <SafeAreaProvider>
+      <View style={{ flex: 1 }}>
+        <StatusBar style="light" />
+        <RootNavigator />
+      </View>
     </SafeAreaProvider>
   );
 }
@@ -70,5 +89,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  splashContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
 });

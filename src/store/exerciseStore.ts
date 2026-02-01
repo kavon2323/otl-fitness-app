@@ -78,29 +78,31 @@ export const useExerciseStore = create<ExerciseState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      // Fetch custom exercises from Supabase
-      const { data, error } = await supabase
-        .from('custom_exercises')
-        .select('*')
-        .order('name');
+      // Try to fetch custom exercises from Supabase
+      // This table may not exist for all deployments, so handle errors gracefully
+      let customExercisesData: CustomExerciseRow[] = [];
 
-      if (error) {
-        console.error('Error fetching custom exercises:', error);
-        set({
-          isLoading: false,
-          isInitialized: true,
-          error: error.message,
-          // Keep base exercises even if fetch fails
-          exercises: exercisesStore.getAll(),
-        });
-        return;
+      try {
+        const { data, error } = await supabase
+          .from('custom_exercises')
+          .select('*')
+          .order('name');
+
+        if (!error && data) {
+          customExercisesData = data;
+        }
+        // If error, just log it - custom_exercises table is optional
+        if (error) {
+          console.log('Custom exercises not available (table may not exist)');
+        }
+      } catch {
+        // Silently continue - custom_exercises is optional
       }
 
       // Map custom exercises to Exercise type
-      const customExercises = (data || []).map(mapCustomExercise);
+      const customExercises = customExercisesData.map(mapCustomExercise);
 
-      // Merge Supabase exercises and custom exercises
-      // Custom exercises are added to the beginning so they appear first
+      // Merge base exercises and custom exercises
       const baseExercises = exercisesStore.getAll();
       const mergedExercises = [...customExercises, ...baseExercises];
 

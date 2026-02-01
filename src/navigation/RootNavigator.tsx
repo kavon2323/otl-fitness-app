@@ -9,17 +9,25 @@ import { OnboardingNavigator } from './OnboardingNavigator';
 import { colors } from '../theme';
 
 export const RootNavigator: React.FC = () => {
-  const { session, isInitialized, isLoading, initialize } = useAuthStore();
-  const { isLoading: profileLoading, fetchProfile, needsOnboarding } = usePlayerProfileStore();
+  const { session, isLoading } = useAuthStore();
+  const { fetchProfile, needsOnboarding } = usePlayerProfileStore();
   const { initialize: initializeExercises } = useExerciseStore();
   const [profileChecked, setProfileChecked] = useState(false);
   const [justCompletedOnboarding, setJustCompletedOnboarding] = useState(false);
+  // Track if we've ever had a session to prevent flashing during login
+  const [hadSession, setHadSession] = useState(false);
 
   useEffect(() => {
-    initialize();
     // Initialize exercises (fetches custom exercises from Supabase)
     initializeExercises();
   }, []);
+
+  // Track when we get a session
+  useEffect(() => {
+    if (session) {
+      setHadSession(true);
+    }
+  }, [session]);
 
   // Fetch player profile when session is available
   useEffect(() => {
@@ -33,8 +41,14 @@ export const RootNavigator: React.FC = () => {
     }
   }, [session?.user?.id]);
 
-  // Show loading screen while initializing
-  if (!isInitialized || isLoading) {
+  // Not logged in and not currently logging in - show auth
+  // Don't show auth screen during loading if we're in the middle of logging in
+  if (!session && !isLoading) {
+    return <AuthNavigator />;
+  }
+
+  // Show loading while logging in or checking session
+  if (isLoading || !session) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -42,13 +56,9 @@ export const RootNavigator: React.FC = () => {
     );
   }
 
-  // Not logged in - show auth
-  if (!session) {
-    return <AuthNavigator />;
-  }
-
-  // Loading profile
-  if (!profileChecked || profileLoading) {
+  // Loading profile - only show loading if we haven't checked profile yet
+  // Don't show loading spinner during profile updates (to prevent remounting AppNavigator)
+  if (!profileChecked) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />

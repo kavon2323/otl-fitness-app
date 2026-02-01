@@ -34,19 +34,35 @@ function rowToExercise(row: ExerciseRow): Exercise {
   };
 }
 
-// Fetch all exercises from Supabase
+// Fetch all exercises from Supabase (with pagination for large datasets)
 export async function fetchExercises(): Promise<Exercise[]> {
-  const { data, error } = await supabase
-    .from('exercises')
-    .select('*')
-    .order('name');
+  let allExercises: ExerciseRow[] = [];
+  let from = 0;
+  const batchSize = 1000;
+  let hasMore = true;
 
-  if (error) {
-    console.error('Error fetching exercises:', error);
-    throw new Error(`Failed to fetch exercises: ${error.message}`);
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from('exercises')
+      .select('*')
+      .order('name')
+      .range(from, from + batchSize - 1);
+
+    if (error) {
+      console.error('Error fetching exercises:', error);
+      throw new Error(`Failed to fetch exercises: ${error.message}`);
+    }
+
+    if (data && data.length > 0) {
+      allExercises = [...allExercises, ...(data as ExerciseRow[])];
+      from += batchSize;
+      hasMore = data.length === batchSize;
+    } else {
+      hasMore = false;
+    }
   }
 
-  return (data as ExerciseRow[]).map(rowToExercise);
+  return allExercises.map(rowToExercise);
 }
 
 // Fetch exercises by category
