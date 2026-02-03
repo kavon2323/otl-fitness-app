@@ -85,6 +85,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
   const [previousScreen, setPreviousScreen] = useState<Screen>('home');
   const [returnToWorkout, setReturnToWorkout] = useState(false);
   const [isRecommendedProgram, setIsRecommendedProgram] = useState(showRecommendedProgram);
+  const [oneOffWorkoutProgram, setOneOffWorkoutProgram] = useState<Program | null>(null);
 
   // Set initial program for overview if coming from onboarding
   useEffect(() => {
@@ -280,12 +281,15 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
   };
 
   const handleWorkoutCancel = () => {
+    // Stay on workout day screen (don't clear oneOffWorkoutProgram yet -
+    // user might want to restart the workout)
     setCurrentScreen('workoutDay');
   };
 
   const handleSummaryDone = () => {
     setSelectedDay(null);
     setCompletedWorkout(null);
+    setOneOffWorkoutProgram(null);
     setCurrentScreen('home');
     setActiveTab('home');
   };
@@ -316,6 +320,13 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
   const handleSelectDifferentProgram = () => {
     setCurrentScreen('programs');
     setActiveTab('programs');
+  };
+
+  const handleStartOneOffWorkout = (day: WorkoutDay, program: Program) => {
+    setSelectedDay(day);
+    setSelectedDayProgramType(program.programType || 'strength');
+    setOneOffWorkoutProgram(program);
+    setCurrentScreen('workoutDay');
   };
 
   // Determine if we should show the tab bar
@@ -389,7 +400,8 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
             </View>
           );
         }
-        const programForDay = getCurrentProgram(selectedDayProgramType);
+        // Use one-off program if set, otherwise use current program
+        const programForDay = oneOffWorkoutProgram || getCurrentProgram(selectedDayProgramType);
         if (!programForDay) {
           return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a1a' }}>
@@ -403,11 +415,18 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
           <WorkoutDayScreen
             day={dayToDisplay}
             programId={programForDay.id}
+            isOneOffWorkout={!!oneOffWorkoutProgram}
             onStartWorkout={handleStartWorkout}
             onBack={() => {
               setSelectedDay(null);
-              setCurrentScreen('home');
-              setActiveTab('home');
+              setOneOffWorkoutProgram(null);
+              // If it was a one-off, go back to program overview, otherwise home
+              if (oneOffWorkoutProgram) {
+                setCurrentScreen('programOverview');
+              } else {
+                setCurrentScreen('home');
+                setActiveTab('home');
+              }
             }}
             onViewExercise={handleViewExercise}
             whyMessage={whyMessage}
@@ -423,7 +442,8 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
             </View>
           );
         }
-        const programForWorkout = getCurrentProgram(selectedDayProgramType);
+        // Use one-off program if set, otherwise use current program
+        const programForWorkout = oneOffWorkoutProgram || getCurrentProgram(selectedDayProgramType);
         if (!programForWorkout) {
           return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a1a' }}>
@@ -437,7 +457,8 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
           <ActiveWorkoutScreen
             day={workoutToRun}
             programId={programForWorkout.id}
-            weekNumber={currentWeek}
+            weekNumber={oneOffWorkoutProgram ? 1 : currentWeek}
+            isOneOffWorkout={!!oneOffWorkoutProgram}
             onComplete={handleWorkoutComplete}
             onCancel={handleWorkoutCancel}
             onViewExercise={handleViewExercise}
@@ -511,6 +532,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
             isRecommended={isRecommendedProgram}
             onStartProgram={handleProgramOverviewStart}
             onSelectDay={handleSelectDay}
+            onStartOneOffWorkout={handleStartOneOffWorkout}
             onViewExercise={handleViewExercise}
             onSelectDifferentProgram={handleSelectDifferentProgram}
             onBack={isRecommendedProgram ? undefined : () => {

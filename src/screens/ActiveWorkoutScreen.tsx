@@ -23,6 +23,7 @@ interface ActiveWorkoutScreenProps {
   day: WorkoutDay;
   programId: string;
   weekNumber: number;
+  isOneOffWorkout?: boolean;
   onComplete: () => void;
   onCancel: () => void;
   onViewExercise: (exerciseId: string) => void;
@@ -49,6 +50,7 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
   day,
   programId,
   weekNumber,
+  isOneOffWorkout = false,
   onComplete,
   onCancel,
   onViewExercise,

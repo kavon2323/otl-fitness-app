@@ -15,6 +15,7 @@ import { WhyMessage } from '../utils/whyMessageGenerator';
 interface WorkoutDayScreenProps {
   day: WorkoutDay;
   programId: string;
+  isOneOffWorkout?: boolean;
   onStartWorkout: () => void;
   onBack: () => void;
   onViewExercise: (exerciseId: string) => void;
@@ -28,6 +29,7 @@ interface WorkoutDayScreenProps {
 export const WorkoutDayScreen: React.FC<WorkoutDayScreenProps> = ({
   day,
   programId,
+  isOneOffWorkout = false,
   onStartWorkout,
   onBack,
   onViewExercise,
@@ -140,6 +142,15 @@ export const WorkoutDayScreen: React.FC<WorkoutDayScreenProps> = ({
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* One-Off Workout Banner */}
+        {isOneOffWorkout && (
+          <View style={styles.oneOffBanner}>
+            <Text style={styles.oneOffBannerText}>
+              One-Off Workout - This won't change your current program
+            </Text>
+          </View>
+        )}
+
         {/* Taper Warning Banner */}
         {taperStatus && (
           <TaperBanner status={taperStatus.status} severity={taperStatus.severity} />
@@ -208,6 +219,20 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
+  },
+  oneOffBanner: {
+    backgroundColor: 'rgba(100, 149, 237, 0.15)',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(100, 149, 237, 0.3)',
+  },
+  oneOffBannerText: {
+    color: '#6495ED',
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   section: {
     marginBottom: 24,

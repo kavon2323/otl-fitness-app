@@ -24,6 +24,7 @@ interface ProgramOverviewScreenProps {
   isRecommended?: boolean;
   onStartProgram: () => void;
   onSelectDay: (day: WorkoutDay, programType: ProgramType) => void;
+  onStartOneOffWorkout: (day: WorkoutDay, program: Program) => void;
   onViewExercise: (exerciseId: string) => void;
   onSelectDifferentProgram: () => void;
   onBack?: () => void;
@@ -34,6 +35,7 @@ export const ProgramOverviewScreen: React.FC<ProgramOverviewScreenProps> = ({
   isRecommended = false,
   onStartProgram,
   onSelectDay,
+  onStartOneOffWorkout,
   onViewExercise,
   onSelectDifferentProgram,
   onBack,
@@ -283,12 +285,22 @@ export const ProgramOverviewScreen: React.FC<ProgramOverviewScreenProps> = ({
                         })}
                       </View>
                     ))}
-                    <TouchableOpacity
-                      style={styles.viewDayButton}
-                      onPress={() => onSelectDay(day, programType)}
-                    >
-                      <Text style={styles.viewDayButtonText}>View Full Workout →</Text>
-                    </TouchableOpacity>
+                    <View style={styles.dayActions}>
+                      <TouchableOpacity
+                        style={styles.viewDayButton}
+                        onPress={() => onSelectDay(day, programType)}
+                      >
+                        <Text style={styles.viewDayButtonText}>View Full Workout →</Text>
+                      </TouchableOpacity>
+                      {!isCurrentProgram && (
+                        <TouchableOpacity
+                          style={styles.oneOffButton}
+                          onPress={() => onStartOneOffWorkout(day, program)}
+                        >
+                          <Text style={styles.oneOffButtonText}>Do This Workout</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
                 )}
               </View>
@@ -579,16 +591,32 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
-  viewDayButton: {
+  dayActions: {
     borderTopWidth: 1,
     borderTopColor: '#333',
     paddingTop: 12,
     marginTop: 8,
+    gap: 10,
+  },
+  viewDayButton: {
   },
   viewDayButtonText: {
     color: colors.primary,
     fontSize: 14,
     fontWeight: '500',
+    textAlign: 'center',
+  },
+  oneOffButton: {
+    backgroundColor: 'rgba(231, 167, 0, 0.15)',
+    borderRadius: 8,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  oneOffButtonText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
     textAlign: 'center',
   },
   differentProgramButton: {
