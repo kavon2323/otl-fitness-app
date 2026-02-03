@@ -345,6 +345,36 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
     }
   };
 
+  // Handle going back to previous set or exercise
+  const handleGoBack = () => {
+    // If we're resting, just cancel the rest and stay where we are
+    if (isResting) {
+      setIsResting(false);
+      setRestTimeRemaining(0);
+      setNextAfterRest(null);
+      return;
+    }
+
+    // If we're not on the first set of the current exercise, go back one set
+    if (currentSetIndex > 0) {
+      setCurrentSetIndex(currentSetIndex - 1);
+      return;
+    }
+
+    // If we're on the first set but not the first exercise, go to the last set of the previous exercise
+    if (currentExerciseIndex > 0) {
+      const prevExercise = flatExercises[currentExerciseIndex - 1];
+      setCurrentExerciseIndex(currentExerciseIndex - 1);
+      setCurrentSetIndex(prevExercise.exercise.sets.length - 1);
+      return;
+    }
+
+    // Already at the very beginning, nothing to go back to
+  };
+
+  // Check if we can go back (not at the very first set of the very first exercise)
+  const canGoBack = isResting || currentSetIndex > 0 || currentExerciseIndex > 0;
+
   // Track where to go after rest completes (for superset flow)
   const [nextAfterRest, setNextAfterRest] = useState<{
     exerciseIndex: number;
@@ -726,20 +756,30 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
           </View>
         )}
 
-        {/* Complete Button */}
-        <TouchableOpacity
-          style={styles.completeSetButton}
-          onPress={handleCompleteSet}
-        >
-          <Text style={styles.completeSetButtonText}>
-            {isTimedSet
-              ? 'Complete Set'
-              : supersetInfo && !supersetInfo.isLastInGroup && supersetModeEnabled
-                ? `Log Set → Next Exercise`
-                : 'Log Set & Rest'
-            }
-          </Text>
-        </TouchableOpacity>
+        {/* Action Buttons */}
+        <View style={styles.actionButtonsContainer}>
+          {canGoBack && (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={handleGoBack}
+            >
+              <Text style={styles.backButtonText}>← Back</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[styles.completeSetButton, canGoBack && styles.completeSetButtonWithBack]}
+            onPress={handleCompleteSet}
+          >
+            <Text style={styles.completeSetButtonText}>
+              {isTimedSet
+                ? 'Complete Set'
+                : supersetInfo && !supersetInfo.isLastInGroup && supersetModeEnabled
+                  ? `Log Set → Next Exercise`
+                  : 'Log Set & Rest'
+              }
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Exercise Notes */}
         {currentExercise.notes && (
@@ -964,12 +1004,33 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  backButton: {
+    backgroundColor: '#333',
+    borderRadius: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   completeSetButton: {
     backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 18,
     alignItems: 'center',
-    marginBottom: 16,
+    flex: 1,
+  },
+  completeSetButtonWithBack: {
+    // When back button is showing, complete button shares the row
   },
   completeSetButtonText: {
     color: '#fff',
