@@ -20,7 +20,7 @@ import { formatPosition, formatSideBias, formatPhase } from '../types/paintball'
 
 interface HomeScreenProps {
   onSelectNewProgram: () => void;
-  onSelectDay: (day: WorkoutDay) => void;
+  onSelectDay: (day: WorkoutDay, programType: ProgramType) => void;
   onEditExercises: () => void;
   onOpenSettings?: () => void;
   onOpenMessages?: () => void;
@@ -224,7 +224,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <TouchableOpacity
               key={day.id}
               style={[styles.dayCard, isCompleted && styles.dayCardCompleted]}
-              onPress={() => onSelectDay(day)}
+              onPress={() => onSelectDay(day, 'strength')}
             >
               <View style={styles.dayHeader}>
                 <View style={[styles.dayNumberBadge, isCompleted && styles.dayNumberBadgeCompleted]}>
@@ -284,7 +284,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     <TouchableOpacity
                       key={day.id}
                       style={[styles.mobilityDayCard, isCompleted && styles.mobilityDayCardCompleted]}
-                      onPress={() => onSelectDay(day)}
+                      onPress={() => onSelectDay(day, 'mobility')}
                     >
                       <Text style={[styles.mobilityDayName, isCompleted && styles.mobilityDayNameCompleted]}>
                         {day.focus || day.name}

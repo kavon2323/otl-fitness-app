@@ -5,6 +5,7 @@ export const mvt2Mvmnt: Program = {
   name: 'MVT 2 - MVMNT P.2',
   description: 'Movement Training Phase 2 - 4-day program with Pull, Push, Lower and Upper focus',
   daysPerWeek: 4,
+  useStaticExercises: true, // Don't generate - use exercises as defined
   days: [
     // Session 1: Pull Focus
     {

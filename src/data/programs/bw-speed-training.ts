@@ -5,6 +5,7 @@ export const bwSpeedTraining: Program = {
   name: 'BW Speed Training',
   description: 'Bodyweight speed training program focusing on acceleration and conditioning',
   daysPerWeek: 2,
+  useStaticExercises: true, // Don't generate - use exercises as defined
   days: [
     // Session 1
     {

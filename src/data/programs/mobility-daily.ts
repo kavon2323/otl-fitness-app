@@ -6,6 +6,7 @@ export const mobilityDaily: Program = {
   description: 'A 15-20 minute daily mobility routine to improve range of motion, reduce injury risk, and enhance recovery. Perfect for mornings or post-workout.',
   daysPerWeek: 7,
   programType: 'mobility',
+  useStaticExercises: true, // Don't generate - use exercises as defined
   days: [
     // Day 1: Lower Body Focus
     {

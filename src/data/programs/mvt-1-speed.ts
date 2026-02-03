@@ -6,6 +6,7 @@ export const mvt1SpeedTraining: Program = {
   name: 'MVT 1 - Speed Training',
   description: 'Movement Training Phase 1 - Speed development program',
   daysPerWeek: 2,
+  useStaticExercises: true, // Don't generate - use exercises as defined
   days: [
     // Session 1
     {

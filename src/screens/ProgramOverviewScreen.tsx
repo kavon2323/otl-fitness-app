@@ -23,7 +23,7 @@ interface ProgramOverviewScreenProps {
   program: Program;
   isRecommended?: boolean;
   onStartProgram: () => void;
-  onSelectDay: (day: WorkoutDay) => void;
+  onSelectDay: (day: WorkoutDay, programType: ProgramType) => void;
   onViewExercise: (exerciseId: string) => void;
   onSelectDifferentProgram: () => void;
   onBack?: () => void;
@@ -285,7 +285,7 @@ export const ProgramOverviewScreen: React.FC<ProgramOverviewScreenProps> = ({
                     ))}
                     <TouchableOpacity
                       style={styles.viewDayButton}
-                      onPress={() => onSelectDay(day)}
+                      onPress={() => onSelectDay(day, programType)}
                     >
                       <Text style={styles.viewDayButtonText}>View Full Workout →</Text>
                     </TouchableOpacity>

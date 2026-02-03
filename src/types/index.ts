@@ -69,6 +69,7 @@ export interface Program {
   days: WorkoutDay[];
   createdAt?: string;
   programType?: ProgramType; // 'strength' or 'mobility' - defaults to 'strength'
+  useStaticExercises?: boolean; // If true, don't run through workout generator - use exercises as-is
 }
 
 // User-specific types

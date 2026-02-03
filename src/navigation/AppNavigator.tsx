@@ -20,7 +20,7 @@ import {
   MessagesScreen,
 } from '../screens';
 import { BottomTabBar, TabName } from '../components';
-import { Program, WorkoutDay, Exercise, WorkoutLog } from '../types';
+import { Program, WorkoutDay, Exercise, WorkoutLog, ProgramType } from '../types';
 import { useProgramStore, getWorkoutWithSelections } from '../store/programStore';
 import { useWorkoutStore } from '../store/workoutStore';
 import { usePlayerProfileStore } from '../store/playerProfileStore';
@@ -79,6 +79,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
     showRecommendedProgram ? recommendedProgram : null
   );
   const [selectedDay, setSelectedDay] = useState<WorkoutDay | null>(null);
+  const [selectedDayProgramType, setSelectedDayProgramType] = useState<ProgramType>('strength');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [completedWorkout, setCompletedWorkout] = useState<WorkoutLog | null>(null);
   const [previousScreen, setPreviousScreen] = useState<Screen>('home');
@@ -96,12 +97,20 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
 
   // Assemble workout based on player profile (position, side bias, phase, experience)
   // Also apply exercise selections from programStore
+  // Skip assembly for programs that use static exercises (BW Speed, MVT, Mobility)
   const assembledWorkout: AssembledWorkout | null = useMemo(() => {
     if (!selectedDay || !profile) return null;
+
+    // Get current program to check if it uses static exercises
+    const program = getCurrentProgram(selectedDayProgramType);
+
+    // If program uses static exercises, return the day as-is (don't run through generator)
+    if (program?.useStaticExercises) {
+      return selectedDay as AssembledWorkout;
+    }
+
     const assembled = assembleWorkoutForPlayer(selectedDay, profile);
 
-    // Get current program to look up exercise selections
-    const program = getCurrentProgram();
     if (!program) return assembled;
 
     // Apply exercise selections to each exercise in the workout
@@ -122,7 +131,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
       ...assembled,
       sections: sectionsWithSelections,
     };
-  }, [selectedDay, profile, getCurrentProgram, getExerciseForSlot]);
+  }, [selectedDay, selectedDayProgramType, profile, getCurrentProgram, getExerciseForSlot]);
 
   // Generate Why message for the assembled workout
   const whyMessage: WhyMessage | null = useMemo(() => {
@@ -226,8 +235,9 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
     setActiveTab('home');
   };
 
-  const handleSelectDay = (day: WorkoutDay) => {
+  const handleSelectDay = (day: WorkoutDay, programType: ProgramType = 'strength') => {
     setSelectedDay(day);
+    setSelectedDayProgramType(programType);
     setCurrentScreen('workoutDay');
   };
 
@@ -245,7 +255,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
   };
 
   const handleEditExercises = () => {
-    const program = getCurrentProgram();
+    const program = getCurrentProgram(selectedDayProgramType);
     if (program) {
       setSelectedProgram(program);
       setCurrentScreen('exerciseSelection');
@@ -379,7 +389,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
             </View>
           );
         }
-        const programForDay = getCurrentProgram();
+        const programForDay = getCurrentProgram(selectedDayProgramType);
         if (!programForDay) {
           return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a1a' }}>
@@ -413,7 +423,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
             </View>
           );
         }
-        const programForWorkout = getCurrentProgram();
+        const programForWorkout = getCurrentProgram(selectedDayProgramType);
         if (!programForWorkout) {
           return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a1a' }}>
