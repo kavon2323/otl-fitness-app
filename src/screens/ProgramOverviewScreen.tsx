@@ -57,8 +57,9 @@ export const ProgramOverviewScreen: React.FC<ProgramOverviewScreenProps> = ({
   }, [profile, program.daysPerWeek]);
 
   // Auto-select exercises for all days (day-specific to allow variety)
+  // Skip auto-selection for programs that use static exercises (BW Speed, MVT, Mobility)
   const autoSelectedExercises = useMemo(() => {
-    if (!profile) return new Map<string, string>();
+    if (!profile || program.useStaticExercises) return new Map<string, string>();
 
     const selections = new Map<string, string>();
     const usedIds: string[] = [];
