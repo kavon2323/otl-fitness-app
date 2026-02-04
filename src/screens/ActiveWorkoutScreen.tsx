@@ -380,10 +380,11 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
       return;
     }
 
-    // If we're on the first set but not the first exercise, go to the first set of the previous exercise
+    // If we're on the first set but not the first exercise, go to the last set of the previous exercise
     if (currentExerciseIndex > 0) {
+      const prevExercise = flatExercises[currentExerciseIndex - 1];
       setCurrentExerciseIndex(currentExerciseIndex - 1);
-      setCurrentSetIndex(0);
+      setCurrentSetIndex(prevExercise.exercise.sets.length - 1);
       return;
     }
 
