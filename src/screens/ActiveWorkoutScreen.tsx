@@ -618,26 +618,12 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.restButton}
-              onPress={() => adjustRestTime(-15)}
-            >
-              <Text style={styles.restButtonText}>-15s</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
               style={[styles.restButton, styles.restButtonPrimary]}
               onPress={() => setIsPaused(!isPaused)}
             >
               <Text style={styles.restButtonPrimaryText}>
                 {isPaused ? 'Resume' : 'Pause'}
               </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.restButton}
-              onPress={() => adjustRestTime(15)}
-            >
-              <Text style={styles.restButtonText}>+15s</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
