@@ -7,6 +7,20 @@ import {
   ComplexityLevel,
 } from '../types/paintball';
 
+// Slot types that exercises can be recommended for
+export type SlotType =
+  | 'PRIMARY_SQUAT' | 'ACCESSORY_SQUAT'
+  | 'PRIMARY_HINGE' | 'SINGLE_LEG_HINGE' | 'ACCESSORY_HINGE'
+  | 'PRIMARY_LUNGE' | 'LATERAL_LUNGE' | 'LUNGE'
+  | 'PRIMARY_PRESS' | 'SECONDARY_PRESS' | 'VERTICAL_PRESS' | 'SINGLE_ARM_PRESS'
+  | 'HORIZONTAL_PRESS' | 'ACCESSORY_PRESS' | 'ROTATIONAL_PRESS'
+  | 'PRIMARY_PULL' | 'HORIZONTAL_PULL' | 'VERTICAL_PULL'
+  | 'SINGLE_ARM_VERTICAL_PULL' | 'ACCESSORY_PULL'
+  | 'CORE_VARIATION' | 'ISO_HOLD' | 'STABILIZATION_CORE' | 'WEIGHTED_CORE'
+  | 'PLYOMETRIC' | 'PLYO_JUMP' | 'PLYO_PUSH'
+  | 'PREP' | 'SPEED_PREP' | 'DYNAMIC_WARMUP' | 'HIP_FLEXOR_PREP' | 'WALKING_RDL'
+  | 'ENERGY_SYSTEM' | 'SPRINT' | 'CONDITIONING' | 'MOBILITY';
+
 export interface ExerciseTag {
   exerciseId: string;
   movementPattern: MovementPattern;
@@ -15,6 +29,8 @@ export interface ExerciseTag {
   positionRelevance: PositionRelevance;
   sideBiasRelevance: SideBiasRelevance;
   complexityLevel: ComplexityLevel;
+  /** Slots this exercise is recommended for. If empty, falls back to category-based matching. */
+  recommendedSlots?: SlotType[];
 }
 
 // Helper to generate IDs from names (matches exercises.ts)
@@ -45,6 +61,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 3 },
     complexityLevel: 1,
+    recommendedSlots: ['PREP', 'SPEED_PREP'],
   },
   {
     exerciseId: toId('Double Pogo Hop + Broad Jump'),
@@ -54,6 +71,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 2 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['SPEED_PREP', 'PLYOMETRIC', 'PLYO_JUMP'],
   },
   {
     exerciseId: toId('Frankenstein Walk'),
@@ -63,6 +81,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 3, back: 3 },
     sideBiasRelevance: { snake: 3, dorito: 3 },
     complexityLevel: 1,
+    recommendedSlots: ['DYNAMIC_WARMUP', 'PREP'],
   },
   {
     exerciseId: toId('Hip Flexor Curls'),
@@ -72,6 +91,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 3 },
     complexityLevel: 1,
+    recommendedSlots: ['HIP_FLEXOR_PREP', 'PREP'],
   },
   {
     exerciseId: toId('Hip Flexor Rock Back'),
@@ -81,6 +101,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['HIP_FLEXOR_PREP', 'PREP', 'MOBILITY'],
   },
   {
     exerciseId: toId('Lateral High Knees'),
@@ -90,6 +111,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 1,
+    recommendedSlots: ['SPEED_PREP', 'DYNAMIC_WARMUP'],
   },
   {
     exerciseId: toId('Lateral Hop Reactive Prep'),
@@ -99,6 +121,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 5, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['SPEED_PREP', 'PLYOMETRIC'],
   },
   {
     exerciseId: toId('Lateral Monster Step'),
@@ -108,6 +131,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 1,
+    recommendedSlots: ['DYNAMIC_WARMUP', 'PREP'],
   },
   {
     exerciseId: toId('Linear Squat Hop'),
@@ -117,6 +141,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 2 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['DYNAMIC_WARMUP', 'PLYOMETRIC'],
   },
   {
     exerciseId: toId('Plyo Push Up'),
@@ -126,6 +151,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 3, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 3 },
     complexityLevel: 2,
+    recommendedSlots: ['PLYO_PUSH', 'PLYOMETRIC'],
   },
   {
     exerciseId: toId('S/L Plyo Box Jumps'),
@@ -135,6 +161,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 2 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 3,
+    recommendedSlots: ['PLYO_JUMP', 'PLYOMETRIC'],
   },
   {
     exerciseId: toId('S/L Toe Touch + Alt High Knee'),
@@ -144,6 +171,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['SPEED_PREP', 'DYNAMIC_WARMUP'],
   },
   {
     exerciseId: toId('S/L Wall Reach RDL + Alt Knee Drive'),
@@ -153,6 +181,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['WALKING_RDL', 'PREP', 'SPEED_PREP'],
   },
   {
     exerciseId: toId('S/L Wall Thoracic Rotations'),
@@ -162,6 +191,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['PREP', 'MOBILITY'],
   },
   {
     exerciseId: toId('Shin Box Dab w/ Rotation'),
@@ -171,6 +201,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PREP', 'MOBILITY'],
   },
   {
     exerciseId: toId('Step Through Upper Cut'),
@@ -180,6 +211,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['SPEED_PREP', 'PLYOMETRIC'],
   },
   {
     exerciseId: toId('Thigh Pop Wall Drill'),
@@ -189,6 +221,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 2 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['SPEED_PREP'],
   },
   {
     exerciseId: toId('Walking Romanian Deadlift'),
@@ -198,6 +231,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 3 },
     complexityLevel: 2,
+    recommendedSlots: ['WALKING_RDL', 'DYNAMIC_WARMUP', 'PREP'],
   },
 
   // ==================== HINGE EXERCISES ====================
@@ -209,6 +243,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_HINGE', 'ACCESSORY_HINGE'],
   },
   {
     exerciseId: toId('BB Hip Thrust ISO Hold'),
@@ -218,6 +253,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['ACCESSORY_HINGE', 'ISO_HOLD'],
   },
   {
     exerciseId: toId('Barbell RDL'),
@@ -227,6 +263,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_HINGE'],
   },
   {
     exerciseId: toId('DB RDL (Toes Elevated)'),
@@ -236,6 +273,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 3 },
     complexityLevel: 2,
+    recommendedSlots: ['ACCESSORY_HINGE'],
   },
   {
     exerciseId: toId('DB Split Stance RDL'),
@@ -245,6 +283,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['SINGLE_LEG_HINGE', 'ACCESSORY_HINGE'],
   },
   {
     exerciseId: toId('DB Split Stance RDL (IR Focus) + Step Up'),
@@ -254,6 +293,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 3 },
     complexityLevel: 3,
+    recommendedSlots: ['SINGLE_LEG_HINGE'],
   },
   {
     exerciseId: toId('KB Deadlift'),
@@ -263,6 +303,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['ACCESSORY_HINGE'],
   },
   {
     exerciseId: toId('KB Deadlift Hop'),
@@ -272,6 +313,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 2 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 3,
+    recommendedSlots: ['PLYOMETRIC', 'PLYO_JUMP'],
   },
   {
     exerciseId: toId('Landmine Sumo Deadlift'),
@@ -281,6 +323,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_HINGE', 'ACCESSORY_HINGE'],
   },
   {
     exerciseId: toId('S/L Asst. RDL'),
@@ -290,6 +333,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['SINGLE_LEG_HINGE', 'ACCESSORY_HINGE'],
   },
   {
     exerciseId: toId('Seated KB Good Morning'),
@@ -299,6 +343,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 3, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 3 },
     complexityLevel: 1,
+    recommendedSlots: ['ACCESSORY_HINGE', 'PREP'],
   },
   {
     exerciseId: toId('Staggered Stance Trap Bar DL (Velocity)'),
@@ -308,6 +353,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 3,
+    recommendedSlots: ['PRIMARY_HINGE', 'SINGLE_LEG_HINGE'],
   },
   {
     exerciseId: toId('Trap Bar Deadlift'),
@@ -317,6 +363,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_HINGE'],
   },
   {
     exerciseId: toId('Trap Bar RDL'),
@@ -326,6 +373,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_HINGE', 'ACCESSORY_HINGE'],
   },
 
   // ==================== SQUAT EXERCISES ====================
@@ -337,6 +385,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_SQUAT'],
   },
   {
     exerciseId: toId('BB Box Squat'),
@@ -346,6 +395,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 3 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_SQUAT'],
   },
   {
     exerciseId: toId('Bodyweight Goblet Squat'),
@@ -355,6 +405,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 3, back: 3 },
     sideBiasRelevance: { snake: 3, dorito: 3 },
     complexityLevel: 1,
+    recommendedSlots: ['PREP', 'DYNAMIC_WARMUP'],
   },
   {
     exerciseId: toId('DB Bulgarian Split Squat'),
@@ -364,6 +415,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_SQUAT', 'ACCESSORY_SQUAT'],
   },
   {
     exerciseId: toId('DB Goblet Squat'),
@@ -373,6 +425,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['ACCESSORY_SQUAT'],
   },
   {
     exerciseId: toId('DB Goblet Squat (Heels Elevated)'),
@@ -382,6 +435,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['ACCESSORY_SQUAT'],
   },
   {
     exerciseId: toId('Dual KB Front Squat'),
@@ -391,6 +445,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_SQUAT', 'ACCESSORY_SQUAT'],
   },
   {
     exerciseId: toId('KB Offset Squat'),
@@ -400,6 +455,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['ACCESSORY_SQUAT'],
   },
   {
     exerciseId: toId('Landmine Lateral Slides'),
@@ -409,6 +465,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 5, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['ACCESSORY_SQUAT', 'LATERAL_LUNGE'],
   },
   {
     exerciseId: toId('Landmine Split Squat (Front Foot Elevated)'),
@@ -418,6 +475,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['ACCESSORY_SQUAT', 'PRIMARY_LUNGE'],
   },
   {
     exerciseId: toId('Landmine Squat'),
@@ -427,6 +485,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['ACCESSORY_SQUAT'],
   },
   {
     exerciseId: toId('Loaded Jump Squat'),
@@ -436,6 +495,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 2 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 3,
+    recommendedSlots: ['PLYOMETRIC', 'PLYO_JUMP'],
   },
   {
     exerciseId: toId('Poliquin Squat'),
@@ -445,6 +505,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 3, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 3 },
     complexityLevel: 2,
+    recommendedSlots: ['ACCESSORY_SQUAT'],
   },
   {
     exerciseId: toId('Squat Hold + DB Snap Shot'),
@@ -454,6 +515,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 5, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['ACCESSORY_SQUAT', 'ISO_HOLD'],
   },
   {
     exerciseId: toId('Squat Pry + Archer'),
@@ -463,6 +525,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PREP', 'MOBILITY'],
   },
   {
     exerciseId: toId('TRX Squat'),
@@ -472,6 +535,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 3, back: 3 },
     sideBiasRelevance: { snake: 3, dorito: 3 },
     complexityLevel: 1,
+    recommendedSlots: ['PREP'],
   },
   {
     exerciseId: toId('Tempo Back Squat'),
@@ -481,6 +545,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_SQUAT', 'ACCESSORY_SQUAT'],
   },
 
   // ==================== LUNGE EXERCISES ====================
@@ -492,6 +557,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['LATERAL_LUNGE', 'LUNGE'],
   },
   {
     exerciseId: toId('Anterior Lunge + Step'),
@@ -501,6 +567,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_LUNGE', 'LUNGE'],
   },
   {
     exerciseId: toId('BB Walking Lunge'),
@@ -510,6 +577,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_LUNGE'],
   },
   {
     exerciseId: toId('DB Drop Lunge + Step Up'),
@@ -519,6 +587,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 3,
+    recommendedSlots: ['PRIMARY_LUNGE', 'LUNGE'],
   },
   {
     exerciseId: toId('DB Explosive Lunge Row'),
@@ -528,6 +597,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 3,
+    recommendedSlots: ['PRIMARY_LUNGE', 'PLYOMETRIC'],
   },
   {
     exerciseId: toId('DB KOT Lunge'),
@@ -537,6 +607,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 3, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 3 },
     complexityLevel: 2,
+    recommendedSlots: ['LUNGE', 'MOBILITY'],
   },
   {
     exerciseId: toId('DB Reverse Lunge'),
@@ -546,6 +617,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['PRIMARY_LUNGE', 'LUNGE'],
   },
   {
     exerciseId: toId('DB Step Through Lunge'),
@@ -555,6 +627,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_LUNGE', 'LUNGE'],
   },
   {
     exerciseId: toId('Floating Heel Calf Raise'),
@@ -564,6 +637,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['ACCESSORY_SQUAT', 'PREP'],
   },
   {
     exerciseId: toId('Goblet Lateral Lunge w/ Slide'),
@@ -573,6 +647,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 5, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['LATERAL_LUNGE'],
   },
   {
     exerciseId: toId('Half Kneeling Box Jump'),
@@ -582,6 +657,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 2 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 3,
+    recommendedSlots: ['PLYOMETRIC', 'PLYO_JUMP'],
   },
   {
     exerciseId: toId('KB Goblet Reverse Lunge (Front Foot Elevated)'),
@@ -591,6 +667,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_LUNGE', 'LUNGE'],
   },
   {
     exerciseId: toId('KB Lateral Lunge w/ Reach'),
@@ -600,6 +677,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['LATERAL_LUNGE'],
   },
   {
     exerciseId: toId('KOT Lunge (Heel Elevated)'),
@@ -609,6 +687,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 3, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 3 },
     complexityLevel: 2,
+    recommendedSlots: ['LUNGE', 'MOBILITY'],
   },
   {
     exerciseId: toId('Lateral Lunge w/ Reach'),
@@ -618,6 +697,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 5 },
     complexityLevel: 1,
+    recommendedSlots: ['LATERAL_LUNGE', 'PREP'],
   },
   {
     exerciseId: toId('Plyo Spiderman Lunge + Hamstring Curl'),
@@ -627,6 +707,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 3,
+    recommendedSlots: ['PLYOMETRIC', 'SPEED_PREP'],
   },
   {
     exerciseId: toId('Rock In Spiderman Lunge + Lizard'),
@@ -636,6 +717,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PREP', 'MOBILITY', 'DYNAMIC_WARMUP'],
   },
 
   // ==================== PRESS EXERCISES ====================
@@ -647,6 +729,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['SECONDARY_PRESS', 'HORIZONTAL_PRESS'],
   },
   {
     exerciseId: toId('BB Bench Press'),
@@ -656,6 +739,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_PRESS', 'HORIZONTAL_PRESS'],
   },
   {
     exerciseId: toId('BB Floor Press'),
@@ -665,6 +749,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_PRESS', 'HORIZONTAL_PRESS'],
   },
   {
     exerciseId: toId('BB Incline Bench Press'),
@@ -674,6 +759,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_PRESS', 'HORIZONTAL_PRESS'],
   },
   {
     exerciseId: toId('Chest Supported W to Y Press'),
@@ -683,6 +769,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['ACCESSORY_PRESS', 'PREP'],
   },
   {
     exerciseId: toId('DB 1.5 Bench Press'),
@@ -692,6 +779,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['SECONDARY_PRESS', 'HORIZONTAL_PRESS'],
   },
   {
     exerciseId: toId('DB 1.5 Lateral Raise'),
@@ -701,6 +789,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['ACCESSORY_PRESS'],
   },
   {
     exerciseId: toId('DB Chest Fly'),
@@ -710,6 +799,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 3, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 3 },
     complexityLevel: 1,
+    recommendedSlots: ['ACCESSORY_PRESS'],
   },
   {
     exerciseId: toId('DB Shoulder Press'),
@@ -719,6 +809,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['PRIMARY_PRESS', 'VERTICAL_PRESS'],
   },
   {
     exerciseId: toId('DB Z Press'),
@@ -728,6 +819,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_PRESS', 'VERTICAL_PRESS'],
   },
   {
     exerciseId: toId('Deadbug Pallof Press'),
@@ -737,6 +829,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['CORE_VARIATION', 'STABILIZATION_CORE'],
   },
   {
     exerciseId: toId('Landmine Rotational Press'),
@@ -746,6 +839,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['ROTATIONAL_PRESS', 'SINGLE_ARM_PRESS'],
   },
   {
     exerciseId: toId('Overcoming Bench Press ISO'),
@@ -755,6 +849,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_PRESS', 'ISO_HOLD'],
   },
   {
     exerciseId: toId('Push Up Hold'),
@@ -764,6 +859,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['ISO_HOLD', 'ACCESSORY_PRESS', 'PREP'],
   },
   {
     exerciseId: toId('S/A DB Bench Press'),
@@ -773,6 +869,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['SINGLE_ARM_PRESS', 'SECONDARY_PRESS'],
   },
   {
     exerciseId: toId('S/A DB Push Press'),
@@ -782,6 +879,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['SINGLE_ARM_PRESS', 'VERTICAL_PRESS'],
   },
   {
     exerciseId: toId('S/A Landmine Press'),
@@ -791,6 +889,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['SINGLE_ARM_PRESS', 'SECONDARY_PRESS'],
   },
   {
     exerciseId: toId('S/A Neutral Grip DB Bench Press'),
@@ -800,6 +899,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['SINGLE_ARM_PRESS', 'HORIZONTAL_PRESS'],
   },
   {
     exerciseId: toId('Yoga Push Up'),
@@ -809,6 +909,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 3 },
     complexityLevel: 1,
+    recommendedSlots: ['PREP', 'DYNAMIC_WARMUP', 'MOBILITY'],
   },
 
   // ==================== PULL EXERCISES ====================
@@ -820,6 +921,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 3,
+    recommendedSlots: ['PRIMARY_PULL', 'VERTICAL_PULL'],
   },
   {
     exerciseId: toId('BB Explosive Inverted Row'),
@@ -829,6 +931,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_PULL', 'HORIZONTAL_PULL'],
   },
   {
     exerciseId: toId('Bent Over BB Row'),
@@ -838,6 +941,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['PRIMARY_PULL', 'HORIZONTAL_PULL'],
   },
   {
     exerciseId: toId('Cable Lat Pulldown'),
@@ -847,6 +951,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['VERTICAL_PULL', 'ACCESSORY_PULL'],
   },
   {
     exerciseId: toId('Chest Supported DB Row'),
@@ -856,6 +961,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['HORIZONTAL_PULL', 'ACCESSORY_PULL'],
   },
   {
     exerciseId: toId('DB Curls'),
@@ -865,6 +971,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 3, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 3 },
     complexityLevel: 1,
+    recommendedSlots: ['ACCESSORY_PULL'],
   },
   {
     exerciseId: toId('DB Kickbacks'),
@@ -874,6 +981,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 3, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 3 },
     complexityLevel: 1,
+    recommendedSlots: ['ACCESSORY_PULL'],
   },
   {
     exerciseId: toId('DB Plank Row'),
@@ -883,6 +991,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['HORIZONTAL_PULL', 'CORE_VARIATION'],
   },
   {
     exerciseId: toId('DB Reverse Fly'),
@@ -892,6 +1001,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['ACCESSORY_PULL'],
   },
   {
     exerciseId: toId('Floating Heel S/S ISO + Face Pull w/ Plate'),
@@ -901,6 +1011,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['ACCESSORY_PULL', 'PREP'],
   },
   {
     exerciseId: toId('S/A Cable Lat Pulldown'),
@@ -910,6 +1021,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['SINGLE_ARM_VERTICAL_PULL', 'VERTICAL_PULL'],
   },
   {
     exerciseId: toId('S/A DB Row'),
@@ -919,6 +1031,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['PRIMARY_PULL', 'HORIZONTAL_PULL'],
   },
   {
     exerciseId: toId('Straight Arm Cable Lat Pulldown'),
@@ -928,6 +1041,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['ACCESSORY_PULL', 'VERTICAL_PULL'],
   },
   {
     exerciseId: toId('TRX Row'),
@@ -937,6 +1051,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['PREP', 'ACCESSORY_PULL'],
   },
   {
     exerciseId: toId('Warbird Variation'),
@@ -946,6 +1061,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['ACCESSORY_PULL', 'PREP'],
   },
   {
     exerciseId: toId('Wide Grip Lat Pulldown'),
@@ -955,6 +1071,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['VERTICAL_PULL', 'PRIMARY_PULL'],
   },
 
   // ==================== CORE EXERCISES ====================
@@ -966,6 +1083,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['CORE_VARIATION', 'ISO_HOLD', 'STABILIZATION_CORE'],
   },
   {
     exerciseId: toId('Bridge w/ Reach'),
@@ -975,6 +1093,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['CORE_VARIATION', 'PREP'],
   },
   {
     exerciseId: toId('Cable Rotational Chop'),
@@ -984,6 +1103,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['CORE_VARIATION', 'ROTATIONAL_PRESS'],
   },
   {
     exerciseId: toId('DB Low/High Chop (Hip Restricted)'),
@@ -993,6 +1113,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['CORE_VARIATION', 'ROTATIONAL_PRESS'],
   },
   {
     exerciseId: toId('DB Plank Rotations'),
@@ -1002,6 +1123,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['CORE_VARIATION', 'STABILIZATION_CORE'],
   },
   {
     exerciseId: toId('Dead Bug'),
@@ -1011,6 +1133,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['CORE_VARIATION', 'STABILIZATION_CORE', 'PREP'],
   },
   {
     exerciseId: toId('Farmers Walk'),
@@ -1020,6 +1143,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['CORE_VARIATION', 'CONDITIONING'],
   },
   {
     exerciseId: toId('KB Adductor Plank'),
@@ -1029,6 +1153,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['ISO_HOLD', 'STABILIZATION_CORE'],
   },
   {
     exerciseId: toId('Low Plank'),
@@ -1038,6 +1163,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['ISO_HOLD', 'CORE_VARIATION'],
   },
   {
     exerciseId: toId('Med Ball Reverse Crunch'),
@@ -1047,6 +1173,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 2,
+    recommendedSlots: ['WEIGHTED_CORE', 'CORE_VARIATION'],
   },
   {
     exerciseId: toId('Reverse Crunch'),
@@ -1056,6 +1183,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['CORE_VARIATION'],
   },
   {
     exerciseId: toId('Side Plank'),
@@ -1065,6 +1193,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 4, back: 5 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['ISO_HOLD', 'CORE_VARIATION', 'STABILIZATION_CORE'],
   },
   {
     exerciseId: toId('Tall Kneeling Slam'),
@@ -1074,6 +1203,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 5 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['CORE_VARIATION', 'PLYOMETRIC'],
   },
   {
     exerciseId: toId('Weighted Crunch'),
@@ -1083,6 +1213,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 3, mid: 4, back: 4 },
     sideBiasRelevance: { snake: 3, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['WEIGHTED_CORE', 'CORE_VARIATION'],
   },
 
   // ==================== SPRINT/ENERGY SYSTEM EXERCISES ====================
@@ -1094,6 +1225,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 5, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['CONDITIONING', 'ENERGY_SYSTEM'],
   },
   {
     exerciseId: toId('Assault Bike'),
@@ -1103,6 +1235,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 4 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['ENERGY_SYSTEM', 'CONDITIONING'],
   },
   {
     exerciseId: toId('Bounding Skips'),
@@ -1112,6 +1245,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 2 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['DYNAMIC_WARMUP', 'SPEED_PREP'],
   },
   {
     exerciseId: toId('Carioca'),
@@ -1121,6 +1255,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 4, mid: 5, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 5 },
     complexityLevel: 1,
+    recommendedSlots: ['DYNAMIC_WARMUP'],
   },
   {
     exerciseId: toId('Fall In Sprint Start'),
@@ -1130,6 +1265,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 2 },
     sideBiasRelevance: { snake: 4, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['SPRINT'],
   },
   {
     exerciseId: toId('High Knees'),
@@ -1139,6 +1275,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 4, dorito: 4 },
     complexityLevel: 1,
+    recommendedSlots: ['DYNAMIC_WARMUP'],
   },
   {
     exerciseId: toId('Lateral Half Kneeling Sprint Start'),
@@ -1148,6 +1285,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 5, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['SPRINT'],
   },
   {
     exerciseId: toId('Lateral Roll In Sprint Start'),
@@ -1157,6 +1295,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 5, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 5 },
     complexityLevel: 3,
+    recommendedSlots: ['SPRINT'],
   },
   {
     exerciseId: toId('Lateral Sprint'),
@@ -1166,6 +1305,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 5, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 5 },
     complexityLevel: 2,
+    recommendedSlots: ['DYNAMIC_WARMUP', 'SPRINT'],
   },
   {
     exerciseId: toId('Roll In Sprint Start'),
@@ -1175,6 +1315,7 @@ export const exerciseTags: ExerciseTag[] = [
     positionRelevance: { front: 5, mid: 4, back: 3 },
     sideBiasRelevance: { snake: 5, dorito: 4 },
     complexityLevel: 3,
+    recommendedSlots: ['SPRINT'],
   },
 ];
 

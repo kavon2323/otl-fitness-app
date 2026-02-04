@@ -5,6 +5,7 @@ import {
   scoreExerciseForPlayer,
   ExerciseTag,
   exerciseTags,
+  SlotType,
 } from '../data/exerciseTags';
 import { getExerciseById, defaultExercises, getAllExercises } from '../store/exerciseStore';
 import { getExperienceLevelFromYears } from './modifierCalculator';
@@ -191,6 +192,22 @@ const getExercisesForSlot = (categorySlot: string): Exercise[] => {
   return matchingExercises;
 };
 
+// Determine if a slot is a PRIMARY slot (vs ACCESSORY/SECONDARY)
+const isPrimarySlot = (categorySlot: string): boolean => {
+  return categorySlot.startsWith('PRIMARY_');
+};
+
+// Check if an exercise was explicitly added to a selection pool (coach-added)
+const isInSelectionPool = (exercise: Exercise, poolName: string): boolean => {
+  return exercise.selectionPools?.includes(poolName) ?? false;
+};
+
+// Check if an exercise is recommended for a specific slot
+const isRecommendedForSlot = (tag: ExerciseTag, categorySlot: string): boolean => {
+  if (!tag.recommendedSlots) return false;
+  return tag.recommendedSlots.includes(categorySlot as SlotType);
+};
+
 // Get the best exercise for a category slot based on player profile
 export const selectExerciseForSlot = (
   categorySlot: string,
@@ -198,6 +215,8 @@ export const selectExerciseForSlot = (
   excludeIds: string[] = []
 ): ExerciseRecommendation | null => {
   const exercises = getExercisesForSlot(categorySlot);
+  const poolName = slotToPoolMap[categorySlot];
+  const isPrimary = isPrimarySlot(categorySlot);
 
   // If no exercises found, try the default
   if (exercises.length === 0) {
@@ -224,9 +243,22 @@ export const selectExerciseForSlot = (
     .filter((ex) => !shouldExcludeFromStrength(ex, categorySlot))
     .map((exercise) => {
       const tag = getExerciseTag(exercise.id);
+      const reasons: string[] = [];
+
+      // Check if this exercise was explicitly added to the pool by a coach
+      const isCoachPoolExercise = poolName && isInSelectionPool(exercise, poolName);
+
       if (!tag) {
-        // No tag - use default score
-        return { exercise, score: 3, reasons: ['Standard exercise'] };
+        // No tag - score based on whether it was explicitly added to the pool
+        if (isCoachPoolExercise) {
+          // Coach-added exercises in the correct pool get a good score
+          // PRIMARY slots get slightly higher score (7) vs ACCESSORY (6)
+          const poolScore = isPrimary ? 7 : 6;
+          reasons.push('Coach-selected for this slot');
+          return { exercise, score: poolScore, reasons };
+        }
+        // Fallback exercise without tags or pool assignment gets low score
+        return { exercise, score: 2, reasons: ['Standard exercise'] };
       }
 
       // Filter by complexity
@@ -234,8 +266,37 @@ export const selectExerciseForSlot = (
         return null;
       }
 
-      const score = scoreExerciseForPlayer(tag, profile.primaryPosition, profile.fieldSideBias);
-      const reasons = getRecommendationReasons(tag, profile);
+      // Base score from position and side bias relevance (max 10)
+      let score = scoreExerciseForPlayer(tag, profile.primaryPosition, profile.fieldSideBias);
+
+      // SIGNIFICANT bonus for exercises explicitly recommended for this slot
+      // This is the primary mechanism for ensuring appropriate exercises are selected
+      if (isRecommendedForSlot(tag, categorySlot)) {
+        score += 5; // Strong bonus for being in the recommended slot
+        reasons.push('Ideal for this slot');
+      }
+
+      // Bonus for PRIMARY slots: prefer exercises with higher scores
+      // For ACCESSORY slots, we're more accepting of varied exercises
+      if (isPrimary) {
+        // For primary slots, only give high scores to top-tier exercises
+        // This ensures PRIMARY gets the "best" exercises
+        if (score >= 8) {
+          score += 2; // Boost already-good exercises for primary slots
+        }
+      } else {
+        // For accessory slots, normalize scores a bit
+        // This allows more variety in accessory selections
+        score = Math.max(score, 5);
+      }
+
+      // Bonus for coach-added pool exercises
+      if (isCoachPoolExercise) {
+        score += 1;
+        reasons.push('Coach-selected for this slot');
+      }
+
+      reasons.push(...getRecommendationReasons(tag, profile));
 
       return { exercise, score, reasons };
     })
@@ -278,6 +339,7 @@ export const getAlternativesForSlot = (
   const exercises = getExercisesForSlot(categorySlot);
   if (!exercises || exercises.length === 0) return [];
 
+  const poolName = slotToPoolMap[categorySlot];
   const experienceLevel = getExperienceLevelFromYears(profile.yearsExperience);
   const maxComplexity = experienceLevel === 'beginner' ? 1 : experienceLevel === 'intermediate' ? 2 : 3;
 
@@ -286,12 +348,43 @@ export const getAlternativesForSlot = (
     .filter((ex) => !shouldExcludeFromStrength(ex, categorySlot))
     .map((exercise) => {
       const tag = getExerciseTag(exercise.id);
-      if (!tag || tag.complexityLevel > maxComplexity) {
+      const isCoachPoolExercise = poolName && isInSelectionPool(exercise, poolName);
+      const reasons: string[] = [];
+
+      if (!tag) {
+        // No tag - score based on whether it was explicitly added to the pool
+        if (isCoachPoolExercise) {
+          reasons.push('Coach-selected for this slot');
+          return {
+            exerciseId: exercise.id,
+            exercise,
+            score: 6,
+            reasons,
+          };
+        }
+        // No tag and not in pool - skip for alternatives
         return null;
       }
 
-      const score = scoreExerciseForPlayer(tag, profile.primaryPosition, profile.fieldSideBias);
-      const reasons = getRecommendationReasons(tag, profile);
+      if (tag.complexityLevel > maxComplexity) {
+        return null;
+      }
+
+      let score = scoreExerciseForPlayer(tag, profile.primaryPosition, profile.fieldSideBias);
+
+      // Bonus for exercises explicitly recommended for this slot
+      if (isRecommendedForSlot(tag, categorySlot)) {
+        score += 5; // Strong bonus for being in the recommended slot
+        reasons.push('Ideal for this slot');
+      }
+
+      // Bonus for coach-added pool exercises
+      if (isCoachPoolExercise) {
+        score += 1;
+        reasons.push('Coach-selected for this slot');
+      }
+
+      reasons.push(...getRecommendationReasons(tag, profile));
 
       return {
         exerciseId: exercise.id,
