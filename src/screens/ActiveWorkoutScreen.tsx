@@ -293,8 +293,7 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
               (fe) => nextRoundIndex < fe.exercise.sets.length
             );
             if (nextExIndex !== -1) {
-              startRest(getDefaultRestTime());
-              setNextAfterRest({
+              startRest(getDefaultRestTime(), {
                 exerciseIndex: supersetInfo.exercises[nextExIndex].exerciseIndex,
                 setIndex: nextRoundIndex,
               });
@@ -307,8 +306,7 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
             if (nextExerciseIndex >= flatExercises.length) {
               setIsWorkoutComplete(true);
             } else {
-              startRest(getDefaultRestTime());
-              setNextAfterRest({
+              startRest(getDefaultRestTime(), {
                 exerciseIndex: nextExerciseIndex,
                 setIndex: 0,
               });
@@ -325,8 +323,7 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
           setIsWorkoutComplete(true);
         } else {
           // Move to next exercise/group after rest
-          startRest(getDefaultRestTime());
-          setNextAfterRest({
+          startRest(getDefaultRestTime(), {
             exerciseIndex: nextExerciseIndex,
             setIndex: 0,
           });
@@ -338,8 +335,7 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
           (fe) => nextRoundIndex < fe.exercise.sets.length
         );
         if (nextExIndex !== -1) {
-          startRest(getDefaultRestTime());
-          setNextAfterRest({
+          startRest(getDefaultRestTime(), {
             exerciseIndex: supersetInfo.exercises[nextExIndex].exerciseIndex,
             setIndex: nextRoundIndex,
           });
@@ -354,14 +350,16 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
         setIsWorkoutComplete(true);
       } else if (isLastSet) {
         // Move to next exercise after rest
-        startRest(getDefaultRestTime());
-        setNextAfterRest({
+        startRest(getDefaultRestTime(), {
           exerciseIndex: currentExerciseIndex + 1,
           setIndex: 0,
         });
       } else {
-        // More sets remaining, start rest
-        startRest(getDefaultRestTime());
+        // More sets remaining, start rest then advance to next set
+        startRest(getDefaultRestTime(), {
+          exerciseIndex: currentExerciseIndex,
+          setIndex: currentSetIndex + 1,
+        });
       }
     }
   };
@@ -403,17 +401,21 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
   } | null>(null);
 
   // Start rest timer (or skip if rest timer is disabled)
-  const startRest = (seconds: number) => {
+  // nextPosition is optional - if provided, it's where to go after rest (or immediately if rest disabled)
+  const startRest = (seconds: number, nextPosition?: { exerciseIndex: number; setIndex: number }) => {
     if (!restTimerEnabled) {
       // Rest timer disabled - immediately move to next position
-      if (nextAfterRest) {
-        setCurrentExerciseIndex(nextAfterRest.exerciseIndex);
-        setCurrentSetIndex(nextAfterRest.setIndex);
+      if (nextPosition) {
+        setCurrentExerciseIndex(nextPosition.exerciseIndex);
+        setCurrentSetIndex(nextPosition.setIndex);
         setNextAfterRest(null);
-      } else if (currentExercise && currentSetIndex < currentExercise.sets.length - 1) {
-        setCurrentSetIndex(currentSetIndex + 1);
       }
       return;
+    }
+
+    // Store where to go after rest completes
+    if (nextPosition) {
+      setNextAfterRest(nextPosition);
     }
 
     setRestTotalTime(seconds);
@@ -428,13 +430,10 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
     setRestTimeRemaining(0);
 
     if (nextAfterRest) {
-      // Go to specific position (superset flow)
+      // Go to the stored next position
       setCurrentExerciseIndex(nextAfterRest.exerciseIndex);
       setCurrentSetIndex(nextAfterRest.setIndex);
       setNextAfterRest(null);
-    } else if (currentExercise && currentSetIndex < currentExercise.sets.length - 1) {
-      // Regular flow: advance to next set
-      setCurrentSetIndex(currentSetIndex + 1);
     }
   };
 
@@ -450,18 +449,15 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
       const timeout = setTimeout(() => {
         setIsResting(false);
         if (nextAfterRest) {
-          // Go to specific position (superset flow)
+          // Go to the stored next position
           setCurrentExerciseIndex(nextAfterRest.exerciseIndex);
           setCurrentSetIndex(nextAfterRest.setIndex);
           setNextAfterRest(null);
-        } else if (currentExercise && currentSetIndex < currentExercise.sets.length - 1) {
-          // Regular flow: advance to next set
-          setCurrentSetIndex(currentSetIndex + 1);
         }
       }, 500);
       return () => clearTimeout(timeout);
     }
-  }, [isResting, restTimeRemaining, currentExercise, currentSetIndex, nextAfterRest]);
+  }, [isResting, restTimeRemaining, nextAfterRest]);
 
   // Finish workout
   const handleFinishWorkout = () => {
