@@ -2,10 +2,10 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type WorkoutType = 'strength' | 'speed' | 'mobility' | 'drills' | 'rest';
+export type WorkoutType = 'strength' | 'speed' | 'mobility' | 'drills' | 'play' | 'rest';
 
 export interface ScheduledWorkout {
-  type: WorkoutType;
+  types: WorkoutType[]; // Multiple types can be scheduled on same day
   programId?: string;
   dayNumber?: number;
 }
@@ -26,11 +26,11 @@ interface ScheduleState {
 
 const defaultSchedule: WeekSchedule = {
   0: null, // Sunday - rest
-  1: { type: 'strength' }, // Monday
-  2: { type: 'mobility' }, // Tuesday
-  3: { type: 'strength' }, // Wednesday
-  4: { type: 'speed' }, // Thursday
-  5: { type: 'strength' }, // Friday
+  1: { types: ['strength'] }, // Monday
+  2: { types: ['mobility'] }, // Tuesday
+  3: { types: ['strength'] }, // Wednesday
+  4: { types: ['speed'] }, // Thursday
+  5: { types: ['strength'] }, // Friday
   6: null, // Saturday - rest
 };
 
@@ -76,6 +76,8 @@ export const getWorkoutTypeInfo = (type: WorkoutType): { label: string; color: s
       return { label: 'Mobility', color: '#4ECDC4', icon: 'body-outline' };
     case 'drills':
       return { label: 'Drills', color: '#9B59B6', icon: 'football-outline' };
+    case 'play':
+      return { label: 'Play/Points', color: '#3498DB', icon: 'trophy-outline' };
     case 'rest':
       return { label: 'Rest', color: '#666', icon: 'bed-outline' };
     default:

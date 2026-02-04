@@ -16,7 +16,6 @@ import { Program, WorkoutDay, ProgramType } from '../types';
 import { Logo, WeeklyCalendar } from '../components';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import { supabase } from '../lib/supabase';
-import { formatPosition, formatSideBias, formatPhase } from '../types/paintball';
 
 interface HomeScreenProps {
   onSelectNewProgram: () => void;
@@ -36,7 +35,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const { user, signOut } = useAuthStore();
   const { getCurrentProgram, currentWeek, currentMobilityWeek, setCurrentWeek, resetProgram } = useProgramStore();
   const { isWorkoutCompletedThisWeek } = useWorkoutStore();
-  const { profile, clearProfile } = usePlayerProfileStore();
+  const { profile } = usePlayerProfileStore();
   const { unreadCount, loadUnreadCount } = useMessageStore();
 
   const currentProgram = getCurrentProgram('strength');
@@ -48,21 +47,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       loadUnreadCount(user.id);
     }
   }, [user?.id]);
-
-  // DEV: Reset player profile to test onboarding
-  const handleResetProfile = async () => {
-    try {
-      // Delete from Supabase
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        await supabase.from('player_profiles').delete().eq('user_id', authUser.id);
-      }
-      // Clear local state
-      clearProfile();
-    } catch (error) {
-      console.error('Error resetting profile:', error);
-    }
-  };
 
   const handleChangeProgram = (programType: ProgramType = 'strength') => {
     resetProgram(programType);
@@ -181,42 +165,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </View>
           </View>
 
+          {/* Weekly Schedule Calendar */}
+          <WeeklyCalendar />
+
           <TouchableOpacity style={styles.editExercisesButton} onPress={onEditExercises}>
             <Ionicons name="options-outline" size={18} color={colors.primary} style={styles.editIcon} />
             <Text style={styles.editExercisesText}>Edit Exercise Selections</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Player Profile Card */}
-        {profile && (
-          <View style={styles.profileCard}>
-            <View style={styles.profileHeader}>
-              <Text style={styles.profileLabel}>YOUR TRAINING PROFILE</Text>
-              <TouchableOpacity onPress={handleResetProfile} style={styles.resetButton}>
-                <Text style={styles.resetText}>Reset</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.profileBadges}>
-              <View style={styles.profileBadge}>
-                <Text style={styles.badgeText}>{formatPosition(profile.primaryPosition)}</Text>
-              </View>
-              <View style={styles.profileBadge}>
-                <Text style={styles.badgeText}>{formatSideBias(profile.fieldSideBias)}</Text>
-              </View>
-              <View style={styles.profileBadge}>
-                <Text style={styles.badgeText}>{formatPhase(profile.currentPhase)}</Text>
-              </View>
-            </View>
-            {profile.nextTournamentDate && (
-              <Text style={styles.tournamentDate}>
-                Next Tournament: {new Date(profile.nextTournamentDate).toLocaleDateString()}
-              </Text>
-            )}
-          </View>
-        )}
-
-        {/* Weekly Schedule Calendar */}
-        <WeeklyCalendar />
 
         <Text style={styles.sectionTitle}>THIS WEEK'S WORKOUTS</Text>
 
@@ -638,57 +594,6 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: spacing['3xl'],
-  },
-  // Profile Card Styles
-  profileCard: {
-    backgroundColor: 'rgba(231, 167, 0, 0.1)',
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    marginBottom: spacing['2xl'],
-    borderWidth: 1,
-    borderColor: 'rgba(231, 167, 0, 0.2)',
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  profileLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.primary,
-    fontWeight: typography.fontWeight.bold,
-    letterSpacing: 1.5,
-  },
-  resetButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  resetText: {
-    color: '#ff6b6b',
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.medium,
-  },
-  profileBadges: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  profileBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-  },
-  badgeText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text,
-    fontWeight: typography.fontWeight.medium,
-  },
-  tournamentDate: {
-    fontSize: typography.fontSize.xs,
-    color: colors.primary,
-    marginTop: spacing.md,
   },
   // Mobility Card Styles
   mobilityCard: {

@@ -18,37 +18,56 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDayPress }) =>
   const { weekSchedule, setWorkoutForDay } = useScheduleStore();
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
+  const [selectedTypes, setSelectedTypes] = useState<WorkoutType[]>([]);
 
   const today = new Date().getDay(); // 0-6, Sunday = 0
 
   const handleDayPress = (dayOfWeek: number) => {
     setSelectedDay(dayOfWeek);
+    // Initialize with current selections
+    const currentWorkout = weekSchedule[dayOfWeek];
+    setSelectedTypes(currentWorkout?.types || []);
     setShowTypeSelector(true);
   };
 
-  const handleSelectType = (type: WorkoutType | null) => {
+  const handleToggleType = (type: WorkoutType) => {
+    setSelectedTypes((prev) => {
+      if (prev.includes(type)) {
+        return prev.filter((t) => t !== type);
+      } else {
+        // Remove 'rest' if selecting an activity, or remove activities if selecting 'rest'
+        if (type === 'rest') {
+          return ['rest'];
+        } else {
+          return [...prev.filter((t) => t !== 'rest'), type];
+        }
+      }
+    });
+  };
+
+  const handleSave = () => {
     if (selectedDay !== null) {
-      if (type === null || type === 'rest') {
+      if (selectedTypes.length === 0 || (selectedTypes.length === 1 && selectedTypes[0] === 'rest')) {
         setWorkoutForDay(selectedDay, null);
       } else {
-        setWorkoutForDay(selectedDay, { type });
+        setWorkoutForDay(selectedDay, { types: selectedTypes.filter((t) => t !== 'rest') });
       }
 
       // Notify parent if callback provided
       if (onDayPress) {
-        onDayPress(selectedDay, type ? { type } : null);
+        onDayPress(selectedDay, selectedTypes.length > 0 ? { types: selectedTypes } : null);
       }
     }
     setShowTypeSelector(false);
     setSelectedDay(null);
   };
 
-  const workoutTypes: (WorkoutType | null)[] = ['strength', 'speed', 'mobility', 'drills', null];
+  const workoutTypes: WorkoutType[] = ['strength', 'speed', 'mobility', 'drills', 'play', 'rest'];
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>THIS WEEK</Text>
+        <Text style={styles.title}>WEEKLY SCHEDULE</Text>
         <Text style={styles.subtitle}>Tap to schedule</Text>
       </View>
 
@@ -56,7 +75,10 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDayPress }) =>
         {[0, 1, 2, 3, 4, 5, 6].map((dayOfWeek) => {
           const workout = weekSchedule[dayOfWeek];
           const isToday = dayOfWeek === today;
-          const typeInfo = workout ? getWorkoutTypeInfo(workout.type) : null;
+          const types = workout?.types || [];
+          const primaryType = types[0];
+          const typeInfo = primaryType ? getWorkoutTypeInfo(primaryType) : null;
+          const hasMultiple = types.length > 1;
 
           return (
             <TouchableOpacity
@@ -85,11 +107,16 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDayPress }) =>
                 ) : (
                   <Text style={styles.restText}>-</Text>
                 )}
+                {hasMultiple && (
+                  <View style={styles.multiIndicator}>
+                    <Text style={styles.multiIndicatorText}>+{types.length - 1}</Text>
+                  </View>
+                )}
               </View>
 
               {typeInfo && (
-                <Text style={[styles.typeLabel, { color: typeInfo.color }]}>
-                  {typeInfo.label.slice(0, 3)}
+                <Text style={[styles.typeLabel, { color: typeInfo.color }]} numberOfLines={1}>
+                  {hasMultiple ? 'Multi' : typeInfo.label.slice(0, 3)}
                 </Text>
               )}
               {!typeInfo && (
@@ -112,30 +139,30 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDayPress }) =>
           activeOpacity={1}
           onPress={() => setShowTypeSelector(false)}
         >
-          <View style={styles.modalContent}>
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             <Text style={styles.modalTitle}>
               {selectedDay !== null ? getDayName(selectedDay) : ''}
             </Text>
-            <Text style={styles.modalSubtitle}>Select workout type</Text>
+            <Text style={styles.modalSubtitle}>Select workout types (multi-select)</Text>
 
             <View style={styles.typeOptions}>
               {workoutTypes.map((type) => {
-                const info = type ? getWorkoutTypeInfo(type) : { label: 'Rest Day', color: '#666', icon: 'bed-outline' };
-                const isSelected = selectedDay !== null &&
-                  (type === null
-                    ? weekSchedule[selectedDay] === null
-                    : weekSchedule[selectedDay]?.type === type);
+                const info = getWorkoutTypeInfo(type);
+                const isSelected = selectedTypes.includes(type);
 
                 return (
                   <TouchableOpacity
-                    key={type || 'rest'}
+                    key={type}
                     style={[
                       styles.typeOption,
                       isSelected && styles.typeOptionSelected,
-                      { borderColor: info.color },
+                      isSelected && { borderColor: info.color },
                     ]}
-                    onPress={() => handleSelectType(type)}
+                    onPress={() => handleToggleType(type)}
                   >
+                    <View style={[styles.checkbox, isSelected && { backgroundColor: info.color, borderColor: info.color }]}>
+                      {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                    </View>
                     <Ionicons
                       name={info.icon as any}
                       size={24}
@@ -149,12 +176,20 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDayPress }) =>
               })}
             </View>
 
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setShowTypeSelector(false)}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowTypeSelector(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleSave}
+              >
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -167,7 +202,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
-    marginBottom: spacing['2xl'],
+    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -218,6 +254,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.xs,
+    position: 'relative',
   },
   dayCircleToday: {
     borderWidth: 2,
@@ -226,6 +263,22 @@ const styles = StyleSheet.create({
   restText: {
     fontSize: typography.fontSize.lg,
     color: colors.textMuted,
+  },
+  multiIndicator: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  multiIndicatorText: {
+    fontSize: 9,
+    fontWeight: typography.fontWeight.bold,
+    color: '#000',
   },
   typeLabel: {
     fontSize: 9,
@@ -266,32 +319,63 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   typeOptions: {
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   typeOption: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surfaceLight,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   typeOptionSelected: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: colors.textMuted,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
+  },
   typeOptionLabel: {
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.medium,
-    marginLeft: spacing.md,
+    marginLeft: spacing.sm,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.xl,
+    gap: spacing.md,
   },
   cancelButton: {
-    marginTop: spacing.xl,
+    flex: 1,
     paddingVertical: spacing.md,
     alignItems: 'center',
+    backgroundColor: colors.surfaceLight,
+    borderRadius: borderRadius.lg,
   },
   cancelButtonText: {
     fontSize: typography.fontSize.base,
     color: colors.textSecondary,
+    fontWeight: typography.fontWeight.medium,
+  },
+  saveButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.lg,
+  },
+  saveButtonText: {
+    fontSize: typography.fontSize.base,
+    color: '#000',
+    fontWeight: typography.fontWeight.bold,
   },
 });
