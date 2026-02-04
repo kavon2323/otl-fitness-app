@@ -13,7 +13,7 @@ import { useWorkoutStore } from '../store/workoutStore';
 import { usePlayerProfileStore } from '../store/playerProfileStore';
 import { useMessageStore } from '../store/messageStore';
 import { Program, WorkoutDay, ProgramType } from '../types';
-import { Logo } from '../components';
+import { Logo, WeeklyCalendar } from '../components';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import { supabase } from '../lib/supabase';
 import { formatPosition, formatSideBias, formatPhase } from '../types/paintball';
@@ -214,6 +214,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             )}
           </View>
         )}
+
+        {/* Weekly Schedule Calendar */}
+        <WeeklyCalendar />
 
         <Text style={styles.sectionTitle}>THIS WEEK'S WORKOUTS</Text>
 

@@ -64,7 +64,7 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
     completeSet,
   } = useWorkoutStore();
 
-  const { supersetModeEnabled, toggleSupersetMode } = usePreferencesStore();
+  const { supersetModeEnabled, toggleSupersetMode, restTimerEnabled, toggleRestTimer } = usePreferencesStore();
 
   // State for current position
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
@@ -199,8 +199,9 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
   const currentSet = currentExercise?.sets[currentSetIndex];
 
   // Use exerciseId directly from the workout data (populated by assembler)
-  const exerciseId = currentExercise?.exerciseId || '';
-  const exerciseData = exerciseId ? getExerciseById(exerciseId) : null;
+  // For static programs with empty exerciseId, use exerciseSlot as unique identifier
+  const exerciseId = currentExercise?.exerciseId || currentExercise?.exerciseSlot || '';
+  const exerciseData = currentExercise?.exerciseId ? getExerciseById(currentExercise.exerciseId) : null;
   const exerciseName = exerciseData?.name || currentExercise?.notes || currentExercise?.categorySlot || '';
 
   // Get logged sets for current exercise
@@ -209,6 +210,24 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
     const exercise = activeWorkout.exercises.find((e) => e.exerciseId === exId);
     return exercise?.sets || [];
   };
+
+  // Pre-populate inputs when navigating to a previously logged set (for editing)
+  useEffect(() => {
+    if (!activeWorkout || !exerciseId) return;
+
+    const loggedSets = getLoggedSetsForExercise(exerciseId);
+    const currentLoggedSet = loggedSets.find(s => s.setNumber === currentSetIndex + 1);
+
+    if (currentLoggedSet) {
+      // Pre-populate with previously logged values
+      setWeight(currentLoggedSet.weight?.toString() || '');
+      setReps(currentLoggedSet.reps?.toString() || '');
+    } else {
+      // Clear inputs for new sets
+      setWeight('');
+      setReps('');
+    }
+  }, [currentExerciseIndex, currentSetIndex, activeWorkout, exerciseId]);
 
   // Calculate default rest time based on exercise type
   const getDefaultRestTime = useCallback((): number => {
@@ -383,8 +402,20 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
     setIndex: number;
   } | null>(null);
 
-  // Start rest timer
+  // Start rest timer (or skip if rest timer is disabled)
   const startRest = (seconds: number) => {
+    if (!restTimerEnabled) {
+      // Rest timer disabled - immediately move to next position
+      if (nextAfterRest) {
+        setCurrentExerciseIndex(nextAfterRest.exerciseIndex);
+        setCurrentSetIndex(nextAfterRest.setIndex);
+        setNextAfterRest(null);
+      } else if (currentExercise && currentSetIndex < currentExercise.sets.length - 1) {
+        setCurrentSetIndex(currentSetIndex + 1);
+      }
+      return;
+    }
+
     setRestTotalTime(seconds);
     setRestTimeRemaining(seconds);
     setIsResting(true);
@@ -460,8 +491,8 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
 
     flatExercises.forEach((fe) => {
       totalSets += fe.exercise.sets.length;
-      // Use exerciseId directly from the workout data
-      const exId = fe.exercise.exerciseId || '';
+      // Use exerciseId, or exerciseSlot for static programs
+      const exId = fe.exercise.exerciseId || fe.exercise.exerciseSlot || '';
       const logged = getLoggedSetsForExercise(exId);
       completedSets += logged.filter((s) => s.completed).length;
     });
@@ -533,7 +564,7 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
     if (nextAfterRest) {
       // Superset: going back to first exercise for next round
       const nextExercise = flatExercises[nextAfterRest.exerciseIndex];
-      // Use exerciseId directly from the workout data
+      // Use exerciseId, or notes for static programs
       const nextExId = nextExercise.exercise.exerciseId || '';
       const nextExData = nextExId ? getExerciseById(nextExId) : null;
       nextUpText = `Round ${nextAfterRest.setIndex + 1}`;
@@ -543,7 +574,7 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
       const nextExercise = isLastSet ? flatExercises[currentExerciseIndex + 1] : null;
 
       if (nextExercise) {
-        // Use exerciseId directly from the workout data
+        // Use exerciseId, or notes for static programs
         const nextExId = nextExercise.exercise.exerciseId || '';
         const nextExData = nextExId ? getExerciseById(nextExId) : null;
         nextUpText = 'Next Exercise';
@@ -702,7 +733,7 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
           <View style={styles.slotBadge}>
             <Text style={styles.slotText}>{currentExercise.exerciseSlot}</Text>
           </View>
-          <TouchableOpacity onPress={() => exerciseId && onViewExercise(exerciseId)}>
+          <TouchableOpacity onPress={() => currentExercise?.exerciseId && onViewExercise(currentExercise.exerciseId)}>
             <Text style={styles.exerciseName}>{exerciseName}</Text>
             <Text style={styles.viewDetails}>View exercise details →</Text>
           </TouchableOpacity>
@@ -841,6 +872,21 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
               <Switch
                 value={supersetModeEnabled}
                 onValueChange={toggleSupersetMode}
+                trackColor={{ false: '#333', true: colors.primary }}
+                thumbColor="#fff"
+              />
+            </View>
+
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>Rest Timer</Text>
+                <Text style={styles.settingDescription}>
+                  Show rest timer between sets
+                </Text>
+              </View>
+              <Switch
+                value={restTimerEnabled}
+                onValueChange={toggleRestTimer}
                 trackColor={{ false: '#333', true: colors.primary }}
                 thumbColor="#fff"
               />

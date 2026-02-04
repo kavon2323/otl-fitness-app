@@ -102,8 +102,8 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
   const assembledWorkout: AssembledWorkout | null = useMemo(() => {
     if (!selectedDay || !profile) return null;
 
-    // Get current program to check if it uses static exercises
-    const program = getCurrentProgram(selectedDayProgramType);
+    // Use one-off program if set, otherwise use current program
+    const program = oneOffWorkoutProgram || getCurrentProgram(selectedDayProgramType);
 
     // If program uses static exercises, return the day as-is (don't run through generator)
     if (program?.useStaticExercises) {
@@ -132,7 +132,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
       ...assembled,
       sections: sectionsWithSelections,
     };
-  }, [selectedDay, selectedDayProgramType, profile, getCurrentProgram, getExerciseForSlot]);
+  }, [selectedDay, selectedDayProgramType, profile, oneOffWorkoutProgram, getCurrentProgram, getExerciseForSlot]);
 
   // Generate Why message for the assembled workout
   const whyMessage: WhyMessage | null = useMemo(() => {

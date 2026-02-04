@@ -9,3 +9,4 @@ export { SplashVideo } from './SplashVideo';
 export { UpgradeModal } from './UpgradeModal';
 export { LockedFeature } from './LockedFeature';
 export { WhyMessageCard, WhyMessageBadge, TaperBanner } from './WhyMessageCard';
+export { WeeklyCalendar } from './WeeklyCalendar';
